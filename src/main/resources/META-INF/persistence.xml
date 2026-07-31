@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<persistence version="3.0" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd">
-    <!-- Define Persistence Unit -->
-    <persistence-unit name="my_persistence_unit">
-        
+<persistence version="3.2" xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd">
+    <!-- JTA persistence unit over the container-managed datasource; the schema
+         itself is owned by Flyway (see FlywayMigrationTrigger), so no DDL
+         generation here. -->
+    <persistence-unit name="siasaleo" transaction-type="JTA">
+        <jta-data-source>jdbc/Siasaleo</jta-data-source>
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
     </persistence-unit>
 </persistence>

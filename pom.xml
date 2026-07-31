@@ -9,7 +9,7 @@
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jakartaee>11.0.0-M1</jakartaee>
+        <jakartaee>11.0.0</jakartaee>
     </properties>
     
     <dependencies>
@@ -32,6 +32,13 @@
     <version>12.10.0</version>
     <scope>runtime</scope>
 </dependency>
+        <!-- OpenAPI annotations only; Payara provides the implementation at runtime. -->
+        <dependency>
+            <groupId>org.eclipse.microprofile.openapi</groupId>
+            <artifactId>microprofile-openapi-api</artifactId>
+            <version>4.1</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
     
     <build>
@@ -49,6 +56,21 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <version>3.4.0</version>
+            </plugin>
+            <!-- Emits target/generated/openapi.{yaml,json} at build time so clients can
+                 generate their wire types without a running server (Payara also serves
+                 the same document live at /openapi). -->
+            <plugin>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-open-api-maven-plugin</artifactId>
+                <version>4.0.8</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate-schema</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

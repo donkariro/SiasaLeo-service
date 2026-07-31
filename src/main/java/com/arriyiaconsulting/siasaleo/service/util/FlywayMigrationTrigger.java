@@ -18,7 +18,7 @@ public class FlywayMigrationTrigger {
 
     private static final Logger LOGGER = Logger.getLogger(FlywayMigrationTrigger.class.getName());
 
-    @Resource(lookup = "jdbc/SiasaleoDS")
+    @Resource(lookup = "jdbc/Siasaleo")
     private DataSource dataSource;
 
     public void migrate(@Observes Startup event) {
