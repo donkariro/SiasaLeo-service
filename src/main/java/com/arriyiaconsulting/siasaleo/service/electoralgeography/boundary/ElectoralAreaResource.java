@@ -30,15 +30,8 @@ public class ElectoralAreaResource {
 
     private static final int MAX_PAGE_SIZE = 500;
 
-    private ElectoralAreaService service;
-
-    ElectoralAreaResource() {
-    }
-
     @Inject
-    public ElectoralAreaResource(ElectoralAreaService service) {
-        this.service = service;
-    }
+    private ElectoralAreaService service;
 
     @GET
     @Path("{id}")

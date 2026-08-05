@@ -15,15 +15,8 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 public class AreaTypeResource {
 
-    private ElectoralAreaService service;
-
-    AreaTypeResource() {
-    }
-
     @Inject
-    public AreaTypeResource(ElectoralAreaService service) {
-        this.service = service;
-    }
+    private ElectoralAreaService service;
 
     @GET
     public List<AreaTypeDto> list() {

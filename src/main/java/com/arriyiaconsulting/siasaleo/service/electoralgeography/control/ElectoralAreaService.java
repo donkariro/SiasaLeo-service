@@ -34,17 +34,11 @@ public class ElectoralAreaService {
             "REGISTRATION_CENTER", "WARD",
             "POLLING_STATION", "REGISTRATION_CENTER");
 
+    @Inject
     private ElectoralAreaRepository electoralAreas;
-    private AreaTypeRepository areaTypes;
-
-    ElectoralAreaService() {
-    }
 
     @Inject
-    public ElectoralAreaService(ElectoralAreaRepository electoralAreas, AreaTypeRepository areaTypes) {
-        this.electoralAreas = electoralAreas;
-        this.areaTypes = areaTypes;
-    }
+    private AreaTypeRepository areaTypes;
 
     @Transactional
     public ElectoralAreaDto create(CreateElectoralAreaRequest request) {
