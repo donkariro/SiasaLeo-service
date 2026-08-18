@@ -13,6 +13,16 @@
     </properties>
     
     <dependencies>
+        <!-- Declared before jakarta.jakartaee-api: the aggregated platform jar
+             has its method bodies stripped, so tests that execute Jakarta Data
+             API code (PageRequest etc.) need the real spec jar first on the
+             classpath. Payara still provides both at runtime. -->
+        <dependency>
+            <groupId>jakarta.data</groupId>
+            <artifactId>jakarta.data-api</artifactId>
+            <version>1.0.1</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>jakarta.platform</groupId>
             <artifactId>jakarta.jakartaee-api</artifactId>
@@ -39,6 +49,18 @@
             <version>4.1</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.11.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>5.14.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     
     <build>
@@ -56,6 +78,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <version>3.4.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
             </plugin>
             <!-- Emits target/generated/openapi.{yaml,json} at build time so clients can
                  generate their wire types without a running server (Payara also serves
