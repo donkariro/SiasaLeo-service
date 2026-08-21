@@ -12,11 +12,9 @@ import com.arriyiaconsulting.siasaleo.service.security.identity.entity.UserAccou
 import com.arriyiaconsulting.siasaleo.service.security.identity.entity.VerificationCode;
 import com.arriyiaconsulting.siasaleo.service.security.identity.repository.UserAccountRepository;
 import com.arriyiaconsulting.siasaleo.service.security.identity.repository.VerificationCodeRepository;
-import jakarta.annotation.PostConstruct;
 import jakarta.data.Limit;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.security.enterprise.identitystore.Pbkdf2PasswordHash;
 import jakarta.transaction.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -25,7 +23,6 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HexFormat;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -38,7 +35,9 @@ import java.util.Optional;
 public class RegistrationService {
 
     private static final int MIN_PASSWORD_LENGTH = 8;
-    private static final Duration CODE_TTL = Duration.ofMinutes(15);
+    // Package-private so RoutingVerificationSender can quote the real expiry
+    // in the messages it composes.
+    static final Duration CODE_TTL = Duration.ofMinutes(15);
     private static final int MAX_CODE_ATTEMPTS = 5;
 
     @Inject
@@ -51,23 +50,13 @@ public class RegistrationService {
     private VerificationSender sender;
 
     @Inject
-    private Pbkdf2PasswordHash passwordHash;
+    private PasswordHasher passwords;
 
     private final SecureRandom random = new SecureRandom();
 
-    @PostConstruct
-    void initPasswordHash() {
-        // OWASP-recommended work factor for PBKDF2-HMAC-SHA512; the produced
-        // hash string embeds its parameters, so verify() keeps working for
-        // hashes created under older settings if these are ever raised.
-        passwordHash.initialize(Map.of(
-                "Pbkdf2PasswordHash.Algorithm", "PBKDF2WithHmacSHA512",
-                "Pbkdf2PasswordHash.Iterations", "210000"));
-    }
-
     @Transactional
     public RegistrationResult register(RegisterRequest request) {
-        return switch (parseIdentifier(request.email(), request.phone())) {
+        return switch (Identifier.parseOneOf(request.email(), request.phone())) {
             case Identifier.Invalid(String reason) -> new RegistrationResult.InvalidIdentifier(reason);
             case Identifier.Parsed(Identifier identifier) -> registerWith(identifier, request);
         };
@@ -89,14 +78,14 @@ public class RegistrationService {
         }
 
         UserAccount account = accounts.save(new UserAccount(
-                identifier, passwordHash.generate(request.password().toCharArray())));
+                identifier, passwords.generate(request.password())));
         issueCode(account, identifier);
         return new RegistrationResult.Registered(UserAccountDto.from(account));
     }
 
     @Transactional
     public VerificationResult verify(VerifyRequest request) {
-        return switch (parseIdentifier(request.email(), request.phone())) {
+        return switch (Identifier.parseOneOf(request.email(), request.phone())) {
             // An identifier that can't be normalized can't belong to any account.
             case Identifier.Invalid ignored -> new VerificationResult.AccountNotFound();
             case Identifier.Parsed(Identifier identifier) -> verifyWith(identifier, request.code());
@@ -144,7 +133,7 @@ public class RegistrationService {
 
     @Transactional
     public ResendResult resendCode(ResendCodeRequest request) {
-        return switch (parseIdentifier(request.email(), request.phone())) {
+        return switch (Identifier.parseOneOf(request.email(), request.phone())) {
             case Identifier.Invalid ignored -> new ResendResult.AccountNotFound();
             case Identifier.Parsed(Identifier identifier) ->
                     accounts.findByIdentifier(identifier)
@@ -169,15 +158,6 @@ public class RegistrationService {
         codes.save(new VerificationCode(
                 account, sha256(code), OffsetDateTime.now().plus(CODE_TTL)));
         sender.send(identifier, code);
-    }
-
-    private static Identifier.ParseOutcome parseIdentifier(String email, String phone) {
-        boolean hasEmail = email != null && !email.isBlank();
-        boolean hasPhone = phone != null && !phone.isBlank();
-        if (hasEmail == hasPhone) {
-            return new Identifier.Invalid("Provide exactly one of email or phone");
-        }
-        return hasEmail ? Identifier.parseEmail(email) : Identifier.parsePhone(phone);
     }
 
     // Plain SHA-256 is enough for 6-digit codes: they are short-lived and

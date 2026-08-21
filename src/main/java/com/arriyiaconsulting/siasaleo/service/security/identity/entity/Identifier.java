@@ -51,6 +51,19 @@ public sealed interface Identifier {
         return new Parsed(new Email(normalized));
     }
 
+    /**
+     * Normalizes the "exactly one of email or phone" request shape shared by
+     * every auth payload (register, verify, resend, login).
+     */
+    static ParseOutcome parseOneOf(String email, String phone) {
+        boolean hasEmail = email != null && !email.isBlank();
+        boolean hasPhone = phone != null && !phone.isBlank();
+        if (hasEmail == hasPhone) {
+            return new Invalid("Provide exactly one of email or phone");
+        }
+        return hasEmail ? parseEmail(email) : parsePhone(phone);
+    }
+
     static ParseOutcome parsePhone(String raw) {
         String normalized = raw.replaceAll("[\\s().-]", "");
         // National format (07xx/01xx…) is assumed to be a Kenyan number;

@@ -49,6 +49,13 @@
             <version>4.1</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Config annotations only; Payara provides the implementation at runtime. -->
+        <dependency>
+            <groupId>org.eclipse.microprofile.config</groupId>
+            <artifactId>microprofile-config-api</artifactId>
+            <version>3.1</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

@@ -10,14 +10,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 
 /**
  * A login identity (V22). Created PENDING_ACTIVATION with exactly one contact
  * point — email or phone, stored normalized — and becomes ACTIVE once the
  * owner proves control of it with a verification code. username and the
- * person link are filled in later profile steps; the login-hardening columns
- * (failed attempts, lockout) belong to the future authentication flow.
+ * person link are filled in later profile steps. The login-hardening columns
+ * (failed attempts, lockout) are driven by AuthenticationService: repeated
+ * password failures set a temporary locked_until window, distinct from the
+ * administrative LOCKED status.
  */
 @Entity
 @Table(name = "user_account")
@@ -91,6 +94,30 @@ public class UserAccount {
         status = AccountStatus.ACTIVE;
     }
 
+    /** Inside the temporary lockout window set by too many password failures? */
+    public boolean isTemporarilyLocked(OffsetDateTime now) {
+        return lockedUntil != null && now.isBefore(lockedUntil);
+    }
+
+    /**
+     * Counts a wrong password; once maxAttempts is reached the account is
+     * locked for lockFor and the counter restarts, so the lockout window
+     * expiring grants a fresh set of attempts.
+     */
+    public void recordFailedLogin(int maxAttempts, Duration lockFor, OffsetDateTime now) {
+        failedLoginAttempts++;
+        if (failedLoginAttempts >= maxAttempts) {
+            lockedUntil = now.plus(lockFor);
+            failedLoginAttempts = 0;
+        }
+    }
+
+    public void recordSuccessfulLogin(OffsetDateTime now) {
+        failedLoginAttempts = 0;
+        lockedUntil = null;
+        lastLoginAt = now;
+    }
+
     /** The contact point this account registered with, as the domain sum type. */
     public Identifier getIdentifier() {
         return email != null ? new Identifier.Email(email) : new Identifier.Phone(phone);
@@ -122,6 +149,18 @@ public class UserAccount {
 
     public AccountStatus getStatus() {
         return status;
+    }
+
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    public OffsetDateTime getLockedUntil() {
+        return lockedUntil;
+    }
+
+    public OffsetDateTime getLastLoginAt() {
+        return lastLoginAt;
     }
 
     public OffsetDateTime getCreatedAt() {
