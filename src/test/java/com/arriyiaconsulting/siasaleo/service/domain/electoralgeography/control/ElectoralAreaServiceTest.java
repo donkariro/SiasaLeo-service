@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -191,7 +192,8 @@ class ElectoralAreaServiceTest {
         when(parentType.getName()).thenReturn(typeName);
         ElectoralArea parent = mock(ElectoralArea.class);
         when(parent.getId()).thenReturn(id);
-        when(parent.getAncestorPath()).thenReturn(ancestorPath);
+        // Rejection tests never read the path; lenient() keeps strict stubs happy.
+        lenient().when(parent.getAncestorPath()).thenReturn(ancestorPath);
         when(parent.getAreaType()).thenReturn(parentType);
         return parent;
     }
