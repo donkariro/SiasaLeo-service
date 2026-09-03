@@ -66,7 +66,7 @@ class CandidacyServiceTest {
     @Test
     void registersExistingPersonAtTheInitialLifecycleStage() {
         givenContest(7L);
-        givenParty(3L, "ODM");
+        givenParty(3L, "Orange Democratic Movement", "ODM");
         givenPerson(5L, "Amina", "Odhiambo");
         when(candidacies.findByPersonAndContest(5L, 7L)).thenReturn(Optional.empty());
         givenInitialStatus();
@@ -84,6 +84,7 @@ class CandidacyServiceTest {
         assertEquals("Odhiambo", created.lastName());
         assertEquals(7L, created.contestId());
         assertEquals(3L, created.politicalPartyId());
+        assertEquals("Orange Democratic Movement", created.partyName());
         assertEquals("ODM", created.partyAbbreviation());
         assertEquals(CandidacyService.INITIAL_STATUS, created.status());
     }
@@ -124,6 +125,7 @@ class CandidacyServiceTest {
                 new RegisterCandidateRequest(5L, null, 7L, null));
 
         assertNull(created.politicalPartyId());
+        assertNull(created.partyName());
         assertNull(created.partyAbbreviation());
         verify(politicalParties, never()).findById(anyLong());
     }
@@ -228,9 +230,10 @@ class CandidacyServiceTest {
         when(contests.findById(id)).thenReturn(Optional.of(contest));
     }
 
-    private void givenParty(long id, String abbreviation) {
+    private void givenParty(long id, String name, String abbreviation) {
         PoliticalParty party = mock(PoliticalParty.class);
         lenient().when(party.getId()).thenReturn(id);
+        lenient().when(party.getName()).thenReturn(name);
         lenient().when(party.getAbbreviation()).thenReturn(abbreviation);
         when(politicalParties.findById(id)).thenReturn(Optional.of(party));
     }

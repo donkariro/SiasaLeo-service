@@ -13,8 +13,9 @@ public record CandidacyDto(
         @Schema(required = true) Long contestId,
         // Null for independent candidates; still listed as required so
         // generated client types get `number | null` rather than an optional
-        // property (same for the abbreviation).
+        // property (same for the name and abbreviation).
         @Schema(required = true, nullable = true) Long politicalPartyId,
+        @Schema(required = true, nullable = true) String partyName,
         @Schema(required = true, nullable = true) String partyAbbreviation,
         @Schema(required = true) String status) {
 
@@ -24,6 +25,7 @@ public record CandidacyDto(
         return new CandidacyDto(candidacy.getId(), person.getId(), person.getFirstName(),
                 person.getLastName(), candidacy.getContestId(),
                 party != null ? party.getId() : null,
+                party != null ? party.getName() : null,
                 party != null ? party.getAbbreviation() : null,
                 candidacy.getStatus().getStatusName());
     }

@@ -16,6 +16,8 @@ import java.time.OffsetDateTime;
 /**
  * Base of the party model (V1): a person or organization. The id is generated
  * here once; subtype tables reuse it as PK + FK (joined inheritance).
+ * party_type names the concrete subtype — PERSON, ORGANIZATION, or
+ * POLITICAL_PARTY for the third level added by V26.
  */
 @Entity
 @Table(name = "party")
