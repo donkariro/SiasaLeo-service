@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.candidate.dto;
 
+import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Gender;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,6 +12,10 @@ import java.time.LocalDate;
  * Registers a candidate for a contest. The candidate is either an existing
  * person (personId) or one created on the fly (person) — exactly one of the
  * two must be given. politicalPartyId is null for independent candidates.
+ *
+ * On NewPerson only the names are required: candidates are often registered
+ * from public sources that state neither a birth date nor a gender, and an
+ * omitted value is recorded as "not stated" rather than guessed (V41).
  */
 public record RegisterCandidateRequest(
         Long personId,
@@ -21,6 +26,7 @@ public record RegisterCandidateRequest(
     public record NewPerson(
             @NotBlank @Size(max = 100) String firstName,
             @NotBlank @Size(max = 100) String lastName,
-            @Past LocalDate dateOfBirth) {
+            @Past LocalDate dateOfBirth,
+            Gender gender) {
     }
 }

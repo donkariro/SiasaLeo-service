@@ -3,11 +3,13 @@ package com.arriyiaconsulting.siasaleo.service.domain.party.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 
 /**
- * Person subtype of the party model (V1).
+ * Person subtype of the party model (V1), with gender added in V41.
  */
 @Entity
 @Table(name = "person")
@@ -23,13 +25,19 @@ public class Person extends Party {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 6)
+    private Gender gender;
+
     protected Person() {
     }
 
-    public Person(String firstName, String lastName, LocalDate dateOfBirth) {
+    /** gender is null when not recorded; see V41 for when that happens. */
+    public Person(String firstName, String lastName, LocalDate dateOfBirth, Gender gender) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.dateOfBirth = dateOfBirth;
+        this.gender = gender;
     }
 
     public String getFirstName() {
@@ -42,5 +50,10 @@ public class Person extends Party {
 
     public LocalDate getDateOfBirth() {
         return dateOfBirth;
+    }
+
+    /** Null when not recorded — never a third value. See V41. */
+    public Gender getGender() {
+        return gender;
     }
 }

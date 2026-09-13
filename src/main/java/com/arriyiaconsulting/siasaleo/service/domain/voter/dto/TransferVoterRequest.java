@@ -5,9 +5,10 @@ import jakarta.validation.constraints.PastOrPresent;
 import java.time.LocalDate;
 
 /**
- * Moves a voter's active registration to another centre. The person comes from
- * the request path; registrationDate dates the new registration and defaults
- * to today.
+ * Moves the caller's active registration to another centre. Like
+ * RegisterVoterRequest, the voter is the authenticated account's person and is
+ * not named here. registrationDate dates the new registration and defaults to
+ * today.
  */
 public record TransferVoterRequest(
         @NotNull Long registrationCenterId,

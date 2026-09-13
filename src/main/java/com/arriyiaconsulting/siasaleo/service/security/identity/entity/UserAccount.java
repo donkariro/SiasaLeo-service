@@ -94,6 +94,25 @@ public class UserAccount {
         status = AccountStatus.ACTIVE;
     }
 
+    /**
+     * Attaches this account to the person it represents — done once, when the
+     * owner first declares a role that needs a party-model identity (see
+     * PersonProfileService). Re-linking is refused rather than ignored: an
+     * account that changed person would silently carry its voter registration,
+     * candidacies and claims over to a different human.
+     */
+    public void linkPerson(Long person) {
+        if (personId != null && !personId.equals(person)) {
+            throw new IllegalStateException(
+                    "Account " + id + " is already linked to person " + personId);
+        }
+        personId = person;
+    }
+
+    public boolean isActive() {
+        return status == AccountStatus.ACTIVE;
+    }
+
     /** Inside the temporary lockout window set by too many password failures? */
     public boolean isTemporarilyLocked(OffsetDateTime now) {
         return lockedUntil != null && now.isBefore(lockedUntil);

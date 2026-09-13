@@ -5,6 +5,7 @@ import com.arriyiaconsulting.siasaleo.service.security.identity.dto.AuthTokenDto
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.LoginRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.LoginResult;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.UserAccountDto;
+import jakarta.annotation.security.PermitAll;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -22,9 +23,13 @@ import java.util.Map;
  * Login endpoint, an exhaustive switch over LoginResult so every business
  * outcome has an explicit HTTP mapping. Lives beside RegistrationResource
  * under the same /auth root; the sub-paths do not overlap.
+ *
+ * @PermitAll for the same reason as RegistrationResource: this is where a
+ * token comes from, so it can never require one.
  */
 @Path("auth")
 @RequestScoped
+@PermitAll
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthenticationResource {

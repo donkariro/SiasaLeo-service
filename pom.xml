@@ -56,6 +56,15 @@
             <version>3.1</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Jakarta JSON implementation for tests only: the API comes from the
+             platform jar with its method bodies stripped, and TokenIssuer
+             parses token claims with it. Payara provides Parsson at runtime. -->
+        <dependency>
+            <groupId>org.eclipse.parsson</groupId>
+            <artifactId>parsson</artifactId>
+            <version>1.1.7</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

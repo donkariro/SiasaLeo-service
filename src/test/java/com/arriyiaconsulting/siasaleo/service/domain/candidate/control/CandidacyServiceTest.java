@@ -3,6 +3,7 @@ package com.arriyiaconsulting.siasaleo.service.domain.candidate.control;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.CandidacyDto;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.RegisterCandidateRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.RegisterCandidateRequest.NewPerson;
+import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Gender;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.entity.Candidacy;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.entity.CandidacyStatus;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.repository.CandidacyRepository;
@@ -99,13 +100,14 @@ class CandidacyServiceTest {
 
         LocalDate dob = LocalDate.of(1980, 3, 14);
         service.register(new RegisterCandidateRequest(
-                null, new NewPerson("Wanjiku", "Kamau", dob), 7L, null));
+                null, new NewPerson("Wanjiku", "Kamau", dob, Gender.FEMALE), 7L, null));
 
         ArgumentCaptor<Person> person = ArgumentCaptor.forClass(Person.class);
         verify(persons).save(person.capture());
         assertEquals("Wanjiku", person.getValue().getFirstName());
         assertEquals("Kamau", person.getValue().getLastName());
         assertEquals(dob, person.getValue().getDateOfBirth());
+        assertEquals(Gender.FEMALE, person.getValue().getGender());
         ArgumentCaptor<Candidacy> saved = ArgumentCaptor.forClass(Candidacy.class);
         verify(candidacies).save(saved.capture());
         assertEquals(person.getValue(), saved.getValue().getPerson());
@@ -134,7 +136,7 @@ class CandidacyServiceTest {
     void rejectsBothPersonIdAndPersonDetails() {
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
                 () -> service.register(new RegisterCandidateRequest(
-                        5L, new NewPerson("Amina", "Odhiambo", null), 7L, null)));
+                        5L, new NewPerson("Amina", "Odhiambo", null, null), 7L, null)));
 
         assertTrue(thrown.getMessage().contains("exactly one"));
         verify(candidacies, never()).save(any());

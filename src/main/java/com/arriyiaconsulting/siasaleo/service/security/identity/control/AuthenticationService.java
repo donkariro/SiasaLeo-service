@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.security.identity.control;
 
+import com.arriyiaconsulting.siasaleo.service.security.authorization.control.RoleAssignments;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.LoginRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.LoginResult;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.UserAccountDto;
@@ -34,6 +35,9 @@ public class AuthenticationService {
 
     @Inject
     private TokenIssuer tokens;
+
+    @Inject
+    private RoleAssignments roleAssignments;
 
     @Transactional
     public LoginResult login(LoginRequest request) {
@@ -70,7 +74,10 @@ public class AuthenticationService {
             case ACTIVE -> {
                 account.recordSuccessfulLogin(now);
                 UserAccount saved = accounts.save(account);
-                TokenIssuer.IssuedToken issued = tokens.issue(saved);
+                // Roles are read once, here, and ride in the token's groups
+                // claim; see RoleAssignments for what that costs.
+                TokenIssuer.IssuedToken issued =
+                        tokens.issue(saved, roleAssignments.rolesOf(saved.getId()));
                 yield new LoginResult.Success(
                         UserAccountDto.from(saved), issued.token(), issued.expiresAt());
             }

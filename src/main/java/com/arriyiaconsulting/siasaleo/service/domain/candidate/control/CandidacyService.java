@@ -78,8 +78,8 @@ public class CandidacyService {
             // A person created here cannot already be in the contest, so no
             // duplicate check is needed.
             RegisterCandidateRequest.NewPerson details = request.person();
-            return persons.save(new Person(
-                    details.firstName(), details.lastName(), details.dateOfBirth()));
+            return persons.save(new Person(details.firstName(), details.lastName(),
+                    details.dateOfBirth(), details.gender()));
         }
         Person person = persons.findById(request.personId())
                 .orElseThrow(() -> new IllegalArgumentException(

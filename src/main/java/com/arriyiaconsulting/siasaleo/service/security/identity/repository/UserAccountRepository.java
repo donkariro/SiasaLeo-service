@@ -21,6 +21,11 @@ public interface UserAccountRepository extends BasicRepository<UserAccount, Long
     @Find
     Optional<UserAccount> findByPhone(@By("phone") String phone);
 
+    // person_id is UNIQUE (V22), so this is the check for "is this person
+    // already somebody's account" behind the claim flow.
+    @Find
+    Optional<UserAccount> findByPersonId(@By("personId") Long personId);
+
     default Optional<UserAccount> findByIdentifier(Identifier identifier) {
         return switch (identifier) {
             case Identifier.Email(String value) -> findByEmail(value);

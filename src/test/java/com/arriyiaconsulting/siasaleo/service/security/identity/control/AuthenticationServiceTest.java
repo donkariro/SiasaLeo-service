@@ -1,5 +1,7 @@
 package com.arriyiaconsulting.siasaleo.service.security.identity.control;
 
+import com.arriyiaconsulting.siasaleo.service.security.authorization.control.RoleAssignments;
+import com.arriyiaconsulting.siasaleo.service.security.authorization.entity.SecurityRole;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.LoginRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.LoginResult;
 import com.arriyiaconsulting.siasaleo.service.security.identity.entity.Identifier;
@@ -7,6 +9,7 @@ import com.arriyiaconsulting.siasaleo.service.security.identity.entity.UserAccou
 import com.arriyiaconsulting.siasaleo.service.security.identity.repository.UserAccountRepository;
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -18,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -42,6 +46,9 @@ class AuthenticationServiceTest {
     @Mock
     private TokenIssuer tokens;
 
+    @Mock
+    private RoleAssignments roleAssignments;
+
     @InjectMocks
     private AuthenticationService service;
 
@@ -53,7 +60,9 @@ class AuthenticationServiceTest {
         when(passwords.verify("s3cret-pw", "stored-hash")).thenReturn(true);
         when(accounts.save(account)).thenReturn(account);
         OffsetDateTime expiry = OffsetDateTime.now().plusHours(1);
-        when(tokens.issue(account)).thenReturn(new TokenIssuer.IssuedToken("the-token", expiry));
+        when(roleAssignments.rolesOf(any())).thenReturn(Set.of(SecurityRole.USER));
+        when(tokens.issue(eq(account), any())).thenReturn(
+                new TokenIssuer.IssuedToken("the-token", expiry));
 
         LoginResult result = service.login(new LoginRequest(EMAIL, null, "s3cret-pw"));
 
@@ -114,7 +123,7 @@ class AuthenticationServiceTest {
         LoginResult result = service.login(new LoginRequest(EMAIL, null, "s3cret-pw"));
 
         assertInstanceOf(LoginResult.NotVerified.class, result);
-        verify(tokens, never()).issue(any());
+        verify(tokens, never()).issue(any(), any());
     }
 
     @Test

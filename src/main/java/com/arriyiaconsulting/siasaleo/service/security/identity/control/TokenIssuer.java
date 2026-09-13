@@ -1,28 +1,47 @@
 package com.arriyiaconsulting.siasaleo.service.security.identity.control;
 
+import com.arriyiaconsulting.siasaleo.service.security.identity.dto.TokenVerification;
 import com.arriyiaconsulting.siasaleo.service.security.identity.entity.UserAccount;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
- * Issues the bearer token a successful login returns: a compact JWT signed
- * with HMAC-SHA256. Only this service ever signs or (later) verifies these
+ * Issues and verifies the bearer token a successful login returns: a compact
+ * JWT signed with HMAC-SHA256. Only this service ever signs or verifies these
  * tokens, so a shared secret suffices — no key-pair management. The secret
  * comes from auth.jwt.secret (min 32 chars); when unset, a random per-startup
  * secret is generated so development works out of the box, at the cost of all
  * tokens dying on restart.
+ *
+ * Verification requires the header segment to equal the one this service
+ * emits, byte for byte. That is stricter than parsing the header and reading
+ * its alg, and deliberately so: it rules out alg:none and algorithm-confusion
+ * attacks outright rather than by case analysis. The signature is compared in
+ * constant time, and only then are the claims read — an unverified payload is
+ * attacker-controlled text and is never parsed for meaning.
  */
 @ApplicationScoped
 public class TokenIssuer {
@@ -69,7 +88,7 @@ public class TokenIssuer {
     public record IssuedToken(String token, OffsetDateTime expiresAt) {
     }
 
-    public IssuedToken issue(UserAccount account) {
+    public IssuedToken issue(UserAccount account, Collection<String> roles) {
         OffsetDateTime now = OffsetDateTime.now();
         OffsetDateTime expiresAt = now.plusMinutes(ttlMinutes);
         String payload = Json.createObjectBuilder()
@@ -78,12 +97,92 @@ public class TokenIssuer {
                 // upn is the MP-JWT claim for the user principal name; using it
                 // now keeps the token forward-compatible with container auth.
                 .add("upn", account.getIdentifier().value())
+                // groups is the MP-JWT claim @RolesAllowed is checked against.
+                .add("groups", groupsOf(roles))
                 .add("iat", now.toEpochSecond())
                 .add("exp", expiresAt.toEpochSecond())
                 .build()
                 .toString();
         String signingInput = HEADER + "." + base64Url(payload.getBytes(StandardCharsets.UTF_8));
         return new IssuedToken(signingInput + "." + base64Url(hmac(signingInput)), expiresAt);
+    }
+
+    /**
+     * Checks a token's signature, issuer and expiry, and returns the claims it
+     * carries. Every failure that is not expiry collapses into Invalid: a
+     * caller learns only that the token was refused.
+     */
+    public TokenVerification verify(String token) {
+        // Limit -1 so an empty signature still counts as a third segment: an
+        // alg:none forgery ends in "." and should be refused on its header,
+        // not mislabelled as malformed.
+        String[] segments = token.split("\\.", -1);
+        if (segments.length != 3) {
+            return new TokenVerification.Invalid("Malformed token");
+        }
+        if (!HEADER.equals(segments[0])) {
+            return new TokenVerification.Invalid("Unexpected JOSE header");
+        }
+
+        String signingInput = segments[0] + "." + segments[1];
+        byte[] presented;
+        try {
+            presented = Base64.getUrlDecoder().decode(segments[2]);
+        } catch (IllegalArgumentException e) {
+            return new TokenVerification.Invalid("Signature is not base64url");
+        }
+        // Constant-time: a length-or-content comparison that short-circuits
+        // leaks how much of a forged signature was right.
+        if (!MessageDigest.isEqual(hmac(signingInput), presented)) {
+            return new TokenVerification.Invalid("Signature mismatch");
+        }
+
+        JsonObject claims;
+        try {
+            claims = Json.createReader(new StringReader(new String(
+                    Base64.getUrlDecoder().decode(segments[1]), StandardCharsets.UTF_8)))
+                    .readObject();
+        } catch (RuntimeException e) {
+            return new TokenVerification.Invalid("Claims are not a JSON object");
+        }
+
+        if (!issuer.equals(claims.getString("iss", null))) {
+            return new TokenVerification.Invalid("Wrong issuer");
+        }
+        if (!claims.containsKey("exp") || !claims.containsKey("sub")) {
+            return new TokenVerification.Invalid("Missing exp or sub");
+        }
+        OffsetDateTime expiresAt = OffsetDateTime.ofInstant(
+                Instant.ofEpochSecond(claims.getJsonNumber("exp").longValue()), ZoneOffset.UTC);
+        if (!OffsetDateTime.now().isBefore(expiresAt)) {
+            return new TokenVerification.Expired();
+        }
+
+        Long accountId;
+        try {
+            accountId = Long.valueOf(claims.getString("sub"));
+        } catch (RuntimeException e) {
+            return new TokenVerification.Invalid("sub is not an account id");
+        }
+        return new TokenVerification.Valid(new TokenVerification.VerifiedToken(
+                accountId, claims.getString("upn", null), rolesIn(claims), expiresAt));
+    }
+
+    private static JsonArrayBuilder groupsOf(Collection<String> roles) {
+        JsonArrayBuilder groups = Json.createArrayBuilder();
+        roles.forEach(groups::add);
+        return groups;
+    }
+
+    private static Set<String> rolesIn(JsonObject claims) {
+        if (!claims.containsKey("groups")
+                || claims.get("groups").getValueType() != JsonValue.ValueType.ARRAY) {
+            return Set.of();
+        }
+        return claims.getJsonArray("groups").stream()
+                .filter(JsonString.class::isInstance)
+                .map(value -> ((JsonString) value).getString())
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     }
 
     private byte[] hmac(String signingInput) {

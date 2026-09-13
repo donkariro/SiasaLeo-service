@@ -9,6 +9,7 @@ import com.arriyiaconsulting.siasaleo.service.security.identity.dto.UserAccountD
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.VerificationResult;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.VerifyRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.repository.UserAccountRepository;
+import jakarta.annotation.security.PermitAll;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -29,9 +30,14 @@ import java.util.Map;
 /**
  * Sign-up endpoints. Each handler is an exhaustive switch over the service's
  * sealed result type, so every business outcome has an explicit HTTP mapping.
+ *
+ * Marked @PermitAll rather than left to RolesAllowedFeature's open default:
+ * these are the endpoints that mint the very token authorization needs, so
+ * they must stay reachable even if that default is ever tightened.
  */
 @Path("auth")
 @RequestScoped
+@PermitAll
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class RegistrationResource {

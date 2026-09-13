@@ -3,8 +3,10 @@ package com.arriyiaconsulting.siasaleo.service.domain.voter.control;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.entity.AreaType;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.entity.ElectoralArea;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.repository.ElectoralAreaRepository;
+import com.arriyiaconsulting.siasaleo.service.domain.party.control.PersonProfileService;
+import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ProfileDetails;
+import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Gender;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
-import com.arriyiaconsulting.siasaleo.service.domain.party.repository.PersonRepository;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.RegisterVoterRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.TransferVoterRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.VoterRegistrationDto;
@@ -31,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -43,18 +46,26 @@ import static org.mockito.Mockito.when;
  * must be a REGISTRATION_CENTER, a person holds one ACTIVE registration at a
  * time, and retiring a registration keeps it as history instead of
  * overwriting it.
+ *
+ * Every write is addressed by account, never by person id — the person is the
+ * caller's, resolved through PersonProfileService — so these also cover the
+ * rule that declaring as a voter is what first creates a person.
  */
 @ExtendWith(MockitoExtension.class)
 class VoterRegistrationServiceTest {
 
+    private static final long ACCOUNT_ID = 3L;
     private static final long PERSON_ID = 5L;
     private static final long CENTER_ID = 42L;
+
+    private static final ProfileDetails PROFILE =
+            new ProfileDetails("Amina", "Odhiambo", LocalDate.of(1994, 2, 8), Gender.FEMALE);
 
     @Mock
     private VoterRegistrationRepository registrations;
 
     @Mock
-    private PersonRepository persons;
+    private PersonProfileService profiles;
 
     @Mock
     private ElectoralAreaRepository electoralAreas;
@@ -73,8 +84,8 @@ class VoterRegistrationServiceTest {
         savePassesThrough();
 
         LocalDate registeredOn = LocalDate.of(2026, 5, 20);
-        VoterRegistrationDto created = service.register(
-                new RegisterVoterRequest(PERSON_ID, CENTER_ID, registeredOn));
+        VoterRegistrationDto created = service.register(ACCOUNT_ID,
+                new RegisterVoterRequest(CENTER_ID, PROFILE, registeredOn));
 
         ArgumentCaptor<VoterRegistration> saved =
                 ArgumentCaptor.forClass(VoterRegistration.class);
@@ -87,6 +98,20 @@ class VoterRegistrationServiceTest {
         assertEquals("ACTIVE", created.status());
     }
 
+    // Declaring as a voter is what first creates the person, so the profile
+    // has to reach PersonProfileService rather than be read here.
+    @Test
+    void theProfileIsHandedToTheServiceThatOwnsThePerson() {
+        givenPerson();
+        givenCenter(CENTER_ID, "Kibra Primary School", "REGISTRATION_CENTER");
+        givenNoActiveRegistration();
+        savePassesThrough();
+
+        service.register(ACCOUNT_ID, new RegisterVoterRequest(CENTER_ID, PROFILE, null));
+
+        verify(profiles).resolveFor(ACCOUNT_ID, PROFILE);
+    }
+
     @Test
     void registrationDateDefaultsToToday() {
         givenPerson();
@@ -94,7 +119,7 @@ class VoterRegistrationServiceTest {
         givenNoActiveRegistration();
         savePassesThrough();
 
-        service.register(new RegisterVoterRequest(PERSON_ID, CENTER_ID, null));
+        service.register(ACCOUNT_ID, new RegisterVoterRequest(CENTER_ID, PROFILE, null));
 
         ArgumentCaptor<VoterRegistration> saved =
                 ArgumentCaptor.forClass(VoterRegistration.class);
@@ -108,37 +133,71 @@ class VoterRegistrationServiceTest {
     @ValueSource(strings = {"WORLD", "COUNTRY", "COUNTY", "CONSTITUENCY", "WARD",
         "POLLING_STATION"})
     void rejectsAnAreaThatIsNotARegistrationCentre(String areaType) {
-        givenPerson();
         givenCenter(CENTER_ID, "Somewhere", areaType);
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.register(new RegisterVoterRequest(PERSON_ID, CENTER_ID, null)));
+                () -> service.register(ACCOUNT_ID,
+                        new RegisterVoterRequest(CENTER_ID, PROFILE, null)));
 
         assertTrue(thrown.getMessage().contains("not a REGISTRATION_CENTER"));
         verify(registrations, never()).save(any());
-    }
-
-    @Test
-    void rejectsUnknownPerson() {
-        when(persons.findById(999L)).thenReturn(Optional.empty());
-
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.register(new RegisterVoterRequest(999L, CENTER_ID, null)));
-
-        assertTrue(thrown.getMessage().contains("Person not found"));
-        verify(registrations, never()).save(any());
+        // The centre is checked first, so a bad one leaves no person behind.
+        verify(profiles, never()).resolveFor(anyLong(), any());
     }
 
     @Test
     void rejectsUnknownCentre() {
-        givenPerson();
         when(electoralAreas.findById(999L)).thenReturn(Optional.empty());
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.register(new RegisterVoterRequest(PERSON_ID, 999L, null)));
+                () -> service.register(ACCOUNT_ID,
+                        new RegisterVoterRequest(999L, PROFILE, null)));
 
         assertTrue(thrown.getMessage().contains("Electoral area not found"));
         verify(registrations, never()).save(any());
+        verify(profiles, never()).resolveFor(anyLong(), any());
+    }
+
+    // Nothing verifies a self-declared date of birth; this only keeps the
+    // obviously ineligible off the roll.
+    @Test
+    void rejectsAVoterUnderVotingAgeOnTheRegistrationDate() {
+        givenPersonBornOn(LocalDate.of(2010, 6, 1));
+        givenCenter(CENTER_ID, "Kibra Primary School", "REGISTRATION_CENTER");
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> service.register(ACCOUNT_ID, new RegisterVoterRequest(
+                        CENTER_ID, PROFILE, LocalDate.of(2026, 5, 20))));
+
+        assertTrue(thrown.getMessage().contains("must be 18"));
+        verify(registrations, never()).save(any());
+    }
+
+    @Test
+    void acceptsAVoterWhoTurnsVotingAgeOnTheRegistrationDate() {
+        givenPersonBornOn(LocalDate.of(2008, 5, 20));
+        givenCenter(CENTER_ID, "Kibra Primary School", "REGISTRATION_CENTER");
+        givenNoActiveRegistration();
+        savePassesThrough();
+
+        service.register(ACCOUNT_ID, new RegisterVoterRequest(
+                CENTER_ID, PROFILE, LocalDate.of(2026, 5, 20)));
+
+        verify(registrations).save(any());
+    }
+
+    // A person carried over from another role may have no recorded birth date;
+    // the roll does not manufacture an eligibility failure from that.
+    @Test
+    void allowsRegistrationWhenNoBirthDateWasDeclared() {
+        givenPersonBornOn(null);
+        givenCenter(CENTER_ID, "Kibra Primary School", "REGISTRATION_CENTER");
+        givenNoActiveRegistration();
+        savePassesThrough();
+
+        service.register(ACCOUNT_ID, new RegisterVoterRequest(CENTER_ID, PROFILE, null));
+
+        verify(registrations).save(any());
     }
 
     @Test
@@ -148,7 +207,8 @@ class VoterRegistrationServiceTest {
         givenActiveRegistrationAt(CENTER_ID, "Kibra Primary School");
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.register(new RegisterVoterRequest(PERSON_ID, CENTER_ID, null)));
+                () -> service.register(ACCOUNT_ID,
+                        new RegisterVoterRequest(CENTER_ID, PROFILE, null)));
 
         assertTrue(thrown.getMessage().contains("transfer it instead"));
         verify(registrations, never()).save(any());
@@ -162,7 +222,7 @@ class VoterRegistrationServiceTest {
         savePassesThrough();
 
         VoterRegistrationDto moved = service.transfer(
-                PERSON_ID, new TransferVoterRequest(7L, null));
+                ACCOUNT_ID, new TransferVoterRequest(7L, null));
 
         assertEquals(VoterRegistrationStatus.TRANSFERRED, current.getStatus());
         assertEquals(7L, moved.registrationCenterId());
@@ -187,7 +247,7 @@ class VoterRegistrationServiceTest {
         givenActiveRegistrationAt(CENTER_ID, "Kibra Primary School");
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.transfer(PERSON_ID, new TransferVoterRequest(CENTER_ID, null)));
+                () -> service.transfer(ACCOUNT_ID, new TransferVoterRequest(CENTER_ID, null)));
 
         assertTrue(thrown.getMessage().contains("already registered at centre"));
         verify(registrations, never()).save(any());
@@ -201,9 +261,22 @@ class VoterRegistrationServiceTest {
         givenNoActiveRegistration();
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.transfer(PERSON_ID, new TransferVoterRequest(7L, null)));
+                () -> service.transfer(ACCOUNT_ID, new TransferVoterRequest(7L, null)));
 
         assertTrue(thrown.getMessage().contains("no active voter registration"));
+        verify(registrations, never()).save(any());
+    }
+
+    // An account that has never declared any role has no person, so there is
+    // nothing to move or withdraw.
+    @Test
+    void transferRequiresTheCallerToHaveDeclaredARole() {
+        when(profiles.findFor(ACCOUNT_ID)).thenReturn(Optional.empty());
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> service.transfer(ACCOUNT_ID, new TransferVoterRequest(7L, null)));
+
+        assertTrue(thrown.getMessage().contains("not registered as a voter"));
         verify(registrations, never()).save(any());
     }
 
@@ -213,7 +286,7 @@ class VoterRegistrationServiceTest {
         VoterRegistration current = givenActiveRegistrationAt(CENTER_ID, "Kibra Primary School");
         savePassesThrough();
 
-        VoterRegistrationDto result = service.deregister(PERSON_ID);
+        VoterRegistrationDto result = service.deregister(ACCOUNT_ID);
 
         assertEquals(VoterRegistrationStatus.DEREGISTERED, current.getStatus());
         assertEquals("DEREGISTERED", result.status());
@@ -226,7 +299,7 @@ class VoterRegistrationServiceTest {
         givenNoActiveRegistration();
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.deregister(PERSON_ID));
+                () -> service.deregister(ACCOUNT_ID));
 
         assertTrue(thrown.getMessage().contains("no active voter registration"));
         verify(registrations, never()).save(any());
@@ -237,7 +310,16 @@ class VoterRegistrationServiceTest {
         givenPerson();
         givenNoActiveRegistration();
 
-        assertTrue(service.findCurrent(PERSON_ID).isEmpty());
+        assertTrue(service.findCurrentFor(ACCOUNT_ID).isEmpty());
+    }
+
+    @Test
+    void anAccountWithNoPersonHasNoRegistrationAndNoHistory() {
+        when(profiles.findFor(ACCOUNT_ID)).thenReturn(Optional.empty());
+
+        assertTrue(service.findCurrentFor(ACCOUNT_ID).isEmpty());
+        assertTrue(service.findHistoryFor(ACCOUNT_ID).isEmpty());
+        verify(registrations, never()).findByPerson(anyLong());
     }
 
     @Test
@@ -269,15 +351,21 @@ class VoterRegistrationServiceTest {
                 any(VoterRegistrationStatus.class), any(PageRequest.class));
     }
 
-    private void givenPerson() {
+    private Person givenPerson() {
+        return givenPersonBornOn(LocalDate.of(1994, 2, 8));
+    }
+
+    private Person givenPersonBornOn(LocalDate dateOfBirth) {
         Person person = mock(Person.class);
-        // Paths that reject on the centre, and the person-scoped reads that
-        // work off the id parameter, never touch these; lenient() keeps
+        // Paths that reject on the centre never touch these; lenient() keeps
         // strict stubs happy.
         lenient().when(person.getId()).thenReturn(PERSON_ID);
         lenient().when(person.getFirstName()).thenReturn("Amina");
         lenient().when(person.getLastName()).thenReturn("Odhiambo");
-        when(persons.findById(PERSON_ID)).thenReturn(Optional.of(person));
+        lenient().when(person.getDateOfBirth()).thenReturn(dateOfBirth);
+        lenient().when(profiles.resolveFor(eq(ACCOUNT_ID), any())).thenReturn(person);
+        lenient().when(profiles.findFor(ACCOUNT_ID)).thenReturn(Optional.of(person));
+        return person;
     }
 
     private void givenCenter(long id, String name, String typeName) {
@@ -298,16 +386,16 @@ class VoterRegistrationServiceTest {
         ElectoralArea center = mock(ElectoralArea.class);
         lenient().when(center.getId()).thenReturn(centerId);
         lenient().when(center.getName()).thenReturn(centerName);
-        lenient().when(center.getAreaType()).thenReturn(type);
         Person person = mock(Person.class);
         lenient().when(person.getId()).thenReturn(PERSON_ID);
         lenient().when(person.getFirstName()).thenReturn("Amina");
         lenient().when(person.getLastName()).thenReturn("Odhiambo");
 
-        VoterRegistration active = new VoterRegistration(person, center, LocalDate.now());
+        VoterRegistration registration =
+                new VoterRegistration(person, center, LocalDate.of(2022, 1, 10));
         when(registrations.findByPersonAndStatus(PERSON_ID, VoterRegistrationStatus.ACTIVE))
-                .thenReturn(Optional.of(active));
-        return active;
+                .thenReturn(Optional.of(registration));
+        return registration;
     }
 
     private void givenNoActiveRegistration() {
@@ -316,7 +404,7 @@ class VoterRegistrationServiceTest {
     }
 
     private void savePassesThrough() {
-        when(registrations.save(any(VoterRegistration.class)))
+        lenient().when(registrations.save(any(VoterRegistration.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
     }
 }

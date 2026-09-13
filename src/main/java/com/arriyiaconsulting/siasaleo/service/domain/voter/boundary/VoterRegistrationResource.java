@@ -3,6 +3,8 @@ package com.arriyiaconsulting.siasaleo.service.domain.voter.boundary;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.control.VoterRegistrationService;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.RegisterVoterRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.VoterRegistrationDto;
+import com.arriyiaconsulting.siasaleo.service.security.identity.control.CallerAccounts;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -19,17 +21,25 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.core.UriInfo;
 import java.util.List;
 
 /**
- * The voter roll itself. Operations on one voter's registration — transfer,
- * deregistration, history — live on VoterResource.
+ * The voter roll itself. Operations on the caller's own registration —
+ * transfer, withdrawal, history — live on VoterResource.
+ *
+ * Registering is the caller's own act, so the person is taken from the
+ * authenticated account and never from the payload. The reads are another
+ * matter: these registrations are self-declarations by the system's users, not
+ * a public register, so listing them is listing who signed up where. Both
+ * reads are administrative.
  */
 @Path("voter-registrations")
 @RequestScoped
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"USER", "ADMINISTRATOR"})
 public class VoterRegistrationResource {
 
     private static final int MAX_PAGE_SIZE = 500;
@@ -37,15 +47,20 @@ public class VoterRegistrationResource {
     @Inject
     private VoterRegistrationService service;
 
+    @Inject
+    private CallerAccounts callers;
+
     @GET
     @Path("{id}")
+    @RolesAllowed("ADMINISTRATOR")
     public VoterRegistrationDto get(@PathParam("id") Long id) {
         return service.findById(id).orElseThrow(NotFoundException::new);
     }
 
-    // Listing without a centre filter would dump the national roll, so
-    // centerId is mandatory here.
+    // Listing without a centre filter would dump every declaration in the
+    // system, so centerId is mandatory here.
     @GET
+    @RolesAllowed("ADMINISTRATOR")
     public List<VoterRegistrationDto> listByCenter(@QueryParam("centerId") Long centerId,
                                                    @QueryParam("page") @DefaultValue("0") int page,
                                                    @QueryParam("size") @DefaultValue("100") int size) {
@@ -56,8 +71,10 @@ public class VoterRegistrationResource {
     }
 
     @POST
-    public Response register(@Valid RegisterVoterRequest request, @Context UriInfo uriInfo) {
-        VoterRegistrationDto created = service.register(request);
+    public Response register(@Valid RegisterVoterRequest request,
+                             @Context SecurityContext security,
+                             @Context UriInfo uriInfo) {
+        VoterRegistrationDto created = service.register(callers.requireId(security), request);
         return Response.created(uriInfo.getAbsolutePathBuilder()
                         .path(String.valueOf(created.id())).build())
                 .entity(created)

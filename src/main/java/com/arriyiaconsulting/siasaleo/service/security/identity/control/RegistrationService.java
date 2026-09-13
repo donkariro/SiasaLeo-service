@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.security.identity.control;
 
+import com.arriyiaconsulting.siasaleo.service.security.authorization.control.RoleAssignments;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.RegisterRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.RegistrationResult;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.ResendCodeRequest;
@@ -51,6 +52,9 @@ public class RegistrationService {
 
     @Inject
     private PasswordHasher passwords;
+
+    @Inject
+    private RoleAssignments roleAssignments;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -128,7 +132,12 @@ public class RegistrationService {
         active.consume();
         codes.save(active);
         account.activate();
-        return new VerificationResult.Verified(UserAccountDto.from(accounts.save(account)));
+        UserAccount verified = accounts.save(account);
+        // Verification is what makes an account usable, so it is also where
+        // the baseline role is granted; without it every @RolesAllowed
+        // endpoint would refuse a perfectly valid account.
+        roleAssignments.grantDefaultRole(verified.getId());
+        return new VerificationResult.Verified(UserAccountDto.from(verified));
     }
 
     @Transactional
