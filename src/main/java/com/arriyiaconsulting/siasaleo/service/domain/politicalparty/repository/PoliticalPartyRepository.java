@@ -15,4 +15,8 @@ public interface PoliticalPartyRepository extends BasicRepository<PoliticalParty
     // (V17). Named apart from BasicRepository.findAll() to avoid overloading it.
     @Query("FROM PoliticalParty ORDER BY officialName.name")
     List<PoliticalParty> findAllOrderedByName(PageRequest pageRequest);
+
+    /** All parties for selection controls, without a page-size limit. */
+    @Query("FROM PoliticalParty ORDER BY officialName.name, id")
+    List<PoliticalParty> findAllOptionsOrderedByName();
 }

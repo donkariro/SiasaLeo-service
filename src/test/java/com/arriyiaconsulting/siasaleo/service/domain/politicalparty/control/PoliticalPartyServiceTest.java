@@ -1,12 +1,14 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control;
 
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartyDto;
+import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartyOptionDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.repository.PoliticalPartyRepository;
 import jakarta.data.page.PageRequest;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -126,5 +128,29 @@ class PoliticalPartyServiceTest {
         lenient().when(party.getId()).thenReturn(id);
         lenient().when(party.getName()).thenReturn(name);
         return party;
+    }
+
+    @Test
+    void optionsReturnTheCompleteRegisterBeyondExistingPageLimits() {
+        List<PoliticalParty> register = LongStream.rangeClosed(1, 501)
+                .mapToObj(id -> givenParty(id, String.format("Party %03d", id)))
+                .toList();
+        when(register.getFirst().getAbbreviation()).thenReturn("P001");
+        when(politicalParties.findAllOptionsOrderedByName()).thenReturn(register);
+
+        List<PoliticalPartyOptionDto> found = service.findAllOptions();
+
+        assertEquals(501, found.size());
+        assertEquals(register.stream().map(PoliticalParty::getId).toList(),
+                found.stream().map(PoliticalPartyOptionDto::id).toList());
+        assertEquals(new PoliticalPartyOptionDto(1L, "Party 001", "P001"), found.getFirst());
+        assertEquals(new PoliticalPartyOptionDto(501L, "Party 501", null), found.getLast());
+    }
+
+    @Test
+    void optionsReturnAnEmptyListWhenNoPartiesExist() {
+        when(politicalParties.findAllOptionsOrderedByName()).thenReturn(List.of());
+
+        assertEquals(List.of(), service.findAllOptions());
     }
 }

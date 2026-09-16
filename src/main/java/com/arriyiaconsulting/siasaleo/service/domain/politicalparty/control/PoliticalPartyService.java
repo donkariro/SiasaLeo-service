@@ -1,6 +1,7 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control;
 
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartyDto;
+import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartyOptionDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.repository.PoliticalPartyRepository;
 import jakarta.data.page.PageRequest;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,6 +22,13 @@ public class PoliticalPartyService {
 
     public Optional<PoliticalPartyDto> findById(Long id) {
         return politicalParties.findById(id).map(PoliticalPartyDto::from);
+    }
+
+    /** The complete register in name order, for reusable selection controls. */
+    public List<PoliticalPartyOptionDto> findAllOptions() {
+        return politicalParties.findAllOptionsOrderedByName().stream()
+                .map(PoliticalPartyOptionDto::from)
+                .toList();
     }
 
     /** The register in name order. */

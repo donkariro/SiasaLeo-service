@@ -8,6 +8,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.AdoptSlo
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.AdoptSymbolRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartyColorsDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartyDto;
+import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartyOptionDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartySloganDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartySymbolDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.ReplaceColorsRequest;
@@ -70,6 +71,13 @@ public class PoliticalPartyResource {
     public List<PoliticalPartyDto> list(@QueryParam("page") @DefaultValue("0") int page,
                                         @QueryParam("size") @DefaultValue("100") int size) {
         return service.findAll(page, clamp(size));
+    }
+
+    /** All parties for candidate registration and other selection controls. */
+    @GET
+    @Path("options")
+    public List<PoliticalPartyOptionDto> options() {
+        return service.findAllOptions();
     }
 
     /** 404 for a party the register records no symbol for. */
