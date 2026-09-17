@@ -1,262 +1,210 @@
 package com.arriyiaconsulting.siasaleo.service.domain.candidate.control;
 
-import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.CandidacyDto;
-import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.RegisterCandidateRequest;
-import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.RegisterCandidateRequest.NewPerson;
-import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Gender;
-import com.arriyiaconsulting.siasaleo.service.domain.candidate.entity.Candidacy;
-import com.arriyiaconsulting.siasaleo.service.domain.candidate.entity.CandidacyStatus;
-import com.arriyiaconsulting.siasaleo.service.domain.candidate.repository.CandidacyRepository;
-import com.arriyiaconsulting.siasaleo.service.domain.candidate.repository.CandidacyStatusRepository;
+import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.*;
+import com.arriyiaconsulting.siasaleo.service.domain.candidate.entity.*;
+import com.arriyiaconsulting.siasaleo.service.domain.candidate.repository.*;
 import com.arriyiaconsulting.siasaleo.service.domain.election.entity.Contest;
 import com.arriyiaconsulting.siasaleo.service.domain.election.repository.ContestRepository;
-import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
+import com.arriyiaconsulting.siasaleo.service.domain.party.control.PersonProfileService;
+import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ProfileDetails;
+import com.arriyiaconsulting.siasaleo.service.domain.party.entity.*;
 import com.arriyiaconsulting.siasaleo.service.domain.party.repository.PersonRepository;
-import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.repository.PoliticalPartyRepository;
+import com.arriyiaconsulting.siasaleo.service.domain.voter.control.VoterRegistrationService;
+import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.*;
 import jakarta.data.page.PageRequest;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-/**
- * Unit tests for the candidate-registration rules: exactly one person
- * reference per request, all referenced rows must exist, one candidacy per
- * person per contest, and every new candidacy starts at the first stage of
- * the V21 lifecycle.
- */
 @ExtendWith(MockitoExtension.class)
 class CandidacyServiceTest {
+    @Mock CandidacyRepository candidacies;
+    @Mock CandidacyStatusRepository statuses;
+    @Mock PersonRepository persons;
+    @Mock ContestRepository contests;
+    @Mock PoliticalPartyRepository politicalParties;
+    @Mock VoterRegistrationService voters;
+    @Mock PersonProfileService profiles;
+    @InjectMocks CandidacyService service;
 
-    @Mock
-    private CandidacyRepository candidacies;
-
-    @Mock
-    private CandidacyStatusRepository statuses;
-
-    @Mock
-    private PersonRepository persons;
-
-    @Mock
-    private ContestRepository contests;
-
-    @Mock
-    private PoliticalPartyRepository politicalParties;
-
-    @InjectMocks
-    private CandidacyService service;
+    private static final long ACCOUNT = 3L;
+    private static final ProfileDetails PROFILE = new ProfileDetails("Amina", "Odhiambo",
+            LocalDate.of(1994, 2, 8), Gender.FEMALE);
+    private static final VoterRegistrationDetails VOTER = new VoterRegistrationDetails(42L, null);
 
     @Test
-    void registersExistingPersonAtTheInitialLifecycleStage() {
-        givenContest(7L);
-        givenParty(3L, "Orange Democratic Movement", "ODM");
-        givenPerson(5L, "Amina", "Odhiambo");
-        when(candidacies.findByPersonAndContest(5L, 7L)).thenReturn(Optional.empty());
-        givenInitialStatus();
-        savePassesThrough();
+    void formForNewAccountIsEditableAndEmptyWithoutCreatingAnything() {
+        CandidateRegistrationFormDto form = service.registrationForm(ACCOUNT);
+        assertFalse(form.registeredVoter());
+        assertFalse(form.voterFieldsReadOnly());
+        assertNull(form.profile());
+        assertNull(form.voterRegistration());
+        verify(profiles).findFor(ACCOUNT);
+        verifyNoInteractions(persons, voters, candidacies);
+    }
 
-        CandidacyDto created = service.register(
-                new RegisterCandidateRequest(5L, null, 7L, 3L));
+    @Test
+    void registeredVoterFormPrefillsAllSharedFieldsAndLocksThem() {
+        Person person = person();
+        when(profiles.findFor(ACCOUNT)).thenReturn(Optional.of(person));
+        VoterRegistrationDto registration = registration();
+        when(voters.findCurrent(5L)).thenReturn(Optional.of(registration));
+        CandidateRegistrationFormDto form = service.registrationForm(ACCOUNT);
+        assertTrue(form.registeredVoter());
+        assertTrue(form.voterFieldsReadOnly());
+        assertEquals(PROFILE, form.profile());
+        assertSame(registration, form.voterRegistration());
+        verifyNoInteractions(persons, candidacies);
+    }
 
+    @Test
+    void existingPersonWithoutActiveVoterRecordHasEditablePrefilledProfile() {
+        Person person = person();
+        when(profiles.findFor(ACCOUNT)).thenReturn(Optional.of(person));
+        CandidateRegistrationFormDto form = service.registrationForm(ACCOUNT);
+        assertFalse(form.voterFieldsReadOnly());
+        assertEquals(PROFILE, form.profile());
+        assertNull(form.voterRegistration());
+    }
+
+    @Test
+    void registeredVoterCanSubmitOnlyCandidateFields() {
+        Person person = ready(null);
+        when(voters.findCurrent(5L)).thenReturn(Optional.of(registration()));
+        saveCandidacy();
+        CandidacyDto result = service.register(ACCOUNT, new RegisterCandidateRequest(null, 7L, null, null));
+        assertEquals(5L, result.personId());
+        assertEquals("EXPRESSED_INTEREST", result.status());
+        assertNull(result.politicalPartyId());
+        verify(voters).ensureActiveForCandidate(person, null);
+        verify(persons, never()).save(any());
+    }
+
+    @Test
+    void registeredVoterCannotOverwriteProfileWithSubmittedValues() {
+        ProfileDetails changed = new ProfileDetails("Changed", "Name", null, null);
+        Person person = ready(changed);
+        when(voters.findCurrent(5L)).thenReturn(Optional.of(registration()));
+        saveCandidacy();
+        service.register(ACCOUNT, new RegisterCandidateRequest(changed, 7L, null, VOTER));
+        assertEquals("Amina", person.getFirstName());
+        assertEquals(PROFILE.dateOfBirth(), person.getDateOfBirth());
+        verify(persons, never()).save(any());
+    }
+
+    @Test
+    void nonVoterCreatesVoterAndCandidateForTheSameResolvedPerson() {
+        Person person = ready(PROFILE);
+        when(persons.save(person)).thenReturn(person);
+        saveCandidacy();
+        service.register(ACCOUNT, new RegisterCandidateRequest(PROFILE, 7L, null, VOTER));
+        InOrder order = inOrder(profiles, voters, candidacies);
+        order.verify(profiles).resolveFor(ACCOUNT, PROFILE);
+        order.verify(voters).findCurrent(5L);
+        order.verify(voters).ensureActiveForCandidate(person, VOTER);
         ArgumentCaptor<Candidacy> saved = ArgumentCaptor.forClass(Candidacy.class);
-        verify(candidacies).save(saved.capture());
-        assertEquals(CandidacyService.INITIAL_STATUS,
-                saved.getValue().getStatus().getStatusName());
-        assertEquals(5L, created.personId());
-        assertEquals("Amina", created.firstName());
-        assertEquals("Odhiambo", created.lastName());
-        assertEquals(7L, created.contestId());
-        assertEquals(3L, created.politicalPartyId());
-        assertEquals("Orange Democratic Movement", created.partyName());
-        assertEquals("ODM", created.partyAbbreviation());
-        assertEquals(CandidacyService.INITIAL_STATUS, created.status());
+        order.verify(candidacies).save(saved.capture());
+        assertSame(person, saved.getValue().getPerson());
     }
 
     @Test
-    void createsThePersonWhenDetailsAreGiven() {
-        givenContest(7L);
-        givenInitialStatus();
-        when(persons.save(any(Person.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        savePassesThrough();
-
-        LocalDate dob = LocalDate.of(1980, 3, 14);
-        service.register(new RegisterCandidateRequest(
-                null, new NewPerson("Wanjiku", "Kamau", dob, Gender.FEMALE), 7L, null));
-
-        ArgumentCaptor<Person> person = ArgumentCaptor.forClass(Person.class);
-        verify(persons).save(person.capture());
-        assertEquals("Wanjiku", person.getValue().getFirstName());
-        assertEquals("Kamau", person.getValue().getLastName());
-        assertEquals(dob, person.getValue().getDateOfBirth());
-        assertEquals(Gender.FEMALE, person.getValue().getGender());
-        ArgumentCaptor<Candidacy> saved = ArgumentCaptor.forClass(Candidacy.class);
-        verify(candidacies).save(saved.capture());
-        assertEquals(person.getValue(), saved.getValue().getPerson());
-        // A person created in this request cannot already be in the contest.
-        verify(candidacies, never()).findByPersonAndContest(anyLong(), anyLong());
+    void nonVoterCanEditSharedProfileFields() {
+        ProfileDetails changed = new ProfileDetails("Updated", "Name", LocalDate.of(1990, 1, 1), Gender.MALE);
+        Person person = ready(changed);
+        when(persons.save(person)).thenReturn(person);
+        saveCandidacy();
+        service.register(ACCOUNT, new RegisterCandidateRequest(changed, 7L, null, VOTER));
+        assertEquals("Updated", person.getFirstName());
+        assertEquals(changed.dateOfBirth(), person.getDateOfBirth());
+        verify(voters).ensureActiveForCandidate(person, VOTER);
     }
 
     @Test
-    void registersIndependentWhenNoPartyIsGiven() {
-        givenContest(7L);
-        givenPerson(5L, "Amina", "Odhiambo");
-        when(candidacies.findByPersonAndContest(5L, 7L)).thenReturn(Optional.empty());
-        givenInitialStatus();
-        savePassesThrough();
-
-        CandidacyDto created = service.register(
-                new RegisterCandidateRequest(5L, null, 7L, null));
-
-        assertNull(created.politicalPartyId());
-        assertNull(created.partyName());
-        assertNull(created.partyAbbreviation());
-        verify(politicalParties, never()).findById(anyLong());
-    }
-
-    @Test
-    void rejectsBothPersonIdAndPersonDetails() {
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.register(new RegisterCandidateRequest(
-                        5L, new NewPerson("Amina", "Odhiambo", null, null), 7L, null)));
-
-        assertTrue(thrown.getMessage().contains("exactly one"));
+    void nonVoterMissingDetailsCannotSaveCandidacy() {
+        Person person = ready(null);
+        doThrow(new IllegalArgumentException("Voter details required"))
+                .when(voters).ensureActiveForCandidate(person, null);
+        assertThrows(IllegalArgumentException.class, () -> service.register(ACCOUNT,
+                new RegisterCandidateRequest(null, 7L, null, null)));
         verify(candidacies, never()).save(any());
     }
 
     @Test
-    void rejectsMissingPersonReference() {
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.register(new RegisterCandidateRequest(null, null, 7L, null)));
-
-        assertTrue(thrown.getMessage().contains("exactly one"));
+    void duplicateContestIsRejectedBeforeChangingVoterOrProfile() {
+        Contest contest = contest();
+        when(contests.findById(7L)).thenReturn(Optional.of(contest));
+        Person person = person();
+        when(profiles.resolveFor(ACCOUNT, null)).thenReturn(person);
+        when(candidacies.findByPersonAndContest(5L, 7L)).thenReturn(Optional.of(mock(Candidacy.class)));
+        assertThrows(IllegalArgumentException.class, () -> service.register(ACCOUNT,
+                new RegisterCandidateRequest(null, 7L, null, null)));
+        verifyNoInteractions(voters, persons);
         verify(candidacies, never()).save(any());
     }
 
     @Test
-    void rejectsUnknownContest() {
-        when(contests.findById(999L)).thenReturn(Optional.empty());
-
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.register(new RegisterCandidateRequest(5L, null, 999L, null)));
-
-        assertTrue(thrown.getMessage().contains("Contest not found"));
-        verify(candidacies, never()).save(any());
+    void unknownContestOrPartyDoesNotResolveOrCreatePerson() {
+        assertThrows(IllegalArgumentException.class, () -> service.register(ACCOUNT,
+                new RegisterCandidateRequest(PROFILE, 99L, null, VOTER)));
+        when(contests.findById(7L)).thenReturn(Optional.of(mock(Contest.class)));
+        assertThrows(IllegalArgumentException.class, () -> service.register(ACCOUNT,
+                new RegisterCandidateRequest(PROFILE, 7L, 99L, VOTER)));
+        verifyNoInteractions(profiles, voters, persons);
     }
 
     @Test
-    void rejectsUnknownPoliticalParty() {
-        givenContest(7L);
-        when(politicalParties.findById(999L)).thenReturn(Optional.empty());
-
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.register(new RegisterCandidateRequest(5L, null, 7L, 999L)));
-
-        assertTrue(thrown.getMessage().contains("Political party not found"));
-        verify(candidacies, never()).save(any());
-    }
-
-    @Test
-    void rejectsUnknownPerson() {
-        givenContest(7L);
-        when(persons.findById(999L)).thenReturn(Optional.empty());
-
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.register(new RegisterCandidateRequest(999L, null, 7L, null)));
-
-        assertTrue(thrown.getMessage().contains("Person not found"));
-        verify(candidacies, never()).save(any());
-    }
-
-    @Test
-    void rejectsARepeatRegistrationInTheSameContest() {
-        givenContest(7L);
-        givenPerson(5L, "Amina", "Odhiambo");
-        when(candidacies.findByPersonAndContest(5L, 7L))
-                .thenReturn(Optional.of(mock(Candidacy.class)));
-
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> service.register(new RegisterCandidateRequest(5L, null, 7L, null)));
-
-        assertTrue(thrown.getMessage().contains("already registered"));
-        verify(candidacies, never()).save(any());
+    void missingBodyIsRejected() {
+        assertThrows(IllegalArgumentException.class, () -> service.register(ACCOUNT, null));
+        verifyNoInteractions(profiles, voters, candidacies);
     }
 
     @Test
     void listByContestConvertsPaging() {
-        givenContest(7L);
-        when(candidacies.findByContest(anyLong(), any(PageRequest.class)))
-                .thenReturn(List.of());
-
+        when(contests.findById(7L)).thenReturn(Optional.of(mock(Contest.class)));
+        when(candidacies.findByContest(eq(7L), any())).thenReturn(List.of());
         service.findByContest(7L, 0, 20);
-
-        ArgumentCaptor<PageRequest> pageRequest = ArgumentCaptor.forClass(PageRequest.class);
-        verify(candidacies).findByContest(anyLong(), pageRequest.capture());
-        // REST layer is 0-based, Jakarta Data is 1-based.
-        assertEquals(1L, pageRequest.getValue().page());
-        assertEquals(20, pageRequest.getValue().size());
+        ArgumentCaptor<PageRequest> paging = ArgumentCaptor.forClass(PageRequest.class);
+        verify(candidacies).findByContest(eq(7L), paging.capture());
+        assertEquals(1, paging.getValue().page());
+        assertEquals(20, paging.getValue().size());
     }
 
-    @Test
-    void listByUnknownContestQueriesNothing() {
-        when(contests.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class,
-                () -> service.findByContest(999L, 0, 20));
-        verify(candidacies, never()).findByContest(anyLong(), any(PageRequest.class));
-    }
-
-    private void givenContest(long id) {
-        Contest contest = mock(Contest.class);
-        // Rejection tests fail before the id is read; lenient() keeps strict
-        // stubs happy.
-        lenient().when(contest.getId()).thenReturn(id);
-        when(contests.findById(id)).thenReturn(Optional.of(contest));
-    }
-
-    private void givenParty(long id, String name, String abbreviation) {
-        PoliticalParty party = mock(PoliticalParty.class);
-        lenient().when(party.getId()).thenReturn(id);
-        lenient().when(party.getName()).thenReturn(name);
-        lenient().when(party.getAbbreviation()).thenReturn(abbreviation);
-        when(politicalParties.findById(id)).thenReturn(Optional.of(party));
-    }
-
-    private void givenPerson(long id, String firstName, String lastName) {
-        Person person = mock(Person.class);
-        when(person.getId()).thenReturn(id);
-        lenient().when(person.getFirstName()).thenReturn(firstName);
-        lenient().when(person.getLastName()).thenReturn(lastName);
-        when(persons.findById(id)).thenReturn(Optional.of(person));
-    }
-
-    private void givenInitialStatus() {
+    private Person ready(ProfileDetails details) {
+        Contest contest = contest();
+        when(contests.findById(7L)).thenReturn(Optional.of(contest));
+        Person person = person();
+        when(profiles.resolveFor(ACCOUNT, details)).thenReturn(person);
         CandidacyStatus status = mock(CandidacyStatus.class);
-        lenient().when(status.getStatusName()).thenReturn(CandidacyService.INITIAL_STATUS);
-        when(statuses.findByStatusName(CandidacyService.INITIAL_STATUS))
-                .thenReturn(Optional.of(status));
+        lenient().when(status.getStatusName()).thenReturn("EXPRESSED_INTEREST");
+        when(statuses.findByStatusName("EXPRESSED_INTEREST")).thenReturn(Optional.of(status));
+        return person;
     }
 
-    private void savePassesThrough() {
-        when(candidacies.save(any(Candidacy.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    private Person person() {
+        Person person = spy(new Person(PROFILE.firstName(), PROFILE.lastName(), PROFILE.dateOfBirth(), PROFILE.gender()));
+        doReturn(5L).when(person).getId();
+        return person;
+    }
+
+    private Contest contest() {
+        Contest contest = mock(Contest.class);
+        when(contest.getId()).thenReturn(7L);
+        return contest;
+    }
+
+    private VoterRegistrationDto registration() {
+        return new VoterRegistrationDto(9L, 5L, "Amina", "Odhiambo", 42L,
+                "Kibra Primary School", LocalDate.of(2022, 1, 10), "ACTIVE");
+    }
+
+    private void saveCandidacy() {
+        when(candidacies.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 }

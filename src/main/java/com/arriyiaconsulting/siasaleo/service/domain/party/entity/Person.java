@@ -44,6 +44,13 @@ public class Person extends Party {
         return firstName;
     }
 
+    public void updateDetails(String firstName, String lastName, LocalDate dateOfBirth, Gender gender) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.dateOfBirth = dateOfBirth;
+        this.gender = gender;
+    }
+
     public String getLastName() {
         return lastName;
     }

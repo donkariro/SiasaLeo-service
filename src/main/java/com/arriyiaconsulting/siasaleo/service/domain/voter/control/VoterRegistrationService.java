@@ -7,6 +7,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.RegisterVoterRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.TransferVoterRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.VoterRegistrationDto;
+import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.VoterRegistrationDetails;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.entity.VoterRegistration;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.entity.VoterRegistrationStatus;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.repository.VoterRegistrationRepository;
@@ -30,7 +31,7 @@ import java.util.Optional;
  *
  * Registrations here are self-declared, not a mirror of the IEBC roll: they
  * exist so the system can scope what it shows a user to the seats they
- * actually vote for. Every write is therefore addressed by the *account*, and
+ * actually vote for. Self-service writes are addressed by the *account*, and
  * the person comes from PersonProfileService rather than from the caller — an
  * id taken from a path or body would let anyone register, move or withdraw
  * anyone else. Declaring as a voter is usually what creates the person, which
@@ -77,6 +78,34 @@ public class VoterRegistrationService {
         }
         return VoterRegistrationDto.from(registrations.save(
                 new VoterRegistration(person, center, registeredOn)));
+    }
+
+    /**
+     * Used by candidate self-registration after resolving the authenticated
+     * account's person. Requires the caller's transaction so a failed
+     * candidacy cannot leave a voter registration behind.
+     * Existing active registrations are reused, never moved or overwritten.
+     */
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void ensureActiveForCandidate(Person person, VoterRegistrationDetails details) {
+        if (findActive(person.getId()).isPresent()) {
+            return;
+        }
+        if (details == null || details.registrationCenterId() == null) {
+            throw new IllegalArgumentException("Candidate must have an active voter registration; "
+                    + "provide voterRegistration.registrationCenterId to register during candidate registration");
+        }
+        if (details.registrationCenterId() <= 0) {
+            throw new IllegalArgumentException("Registration centre ID must be positive");
+        }
+        LocalDate registeredOn = dateOrToday(details.registrationDate());
+        if (registeredOn.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Voter registration date must not be in the future");
+        }
+        ElectoralArea center = requireRegistrationCenter(details.registrationCenterId());
+        requireVotingAge(person, registeredOn);
+        // The existing partial unique index guarantees at most one ACTIVE row.
+        registrations.save(new VoterRegistration(person, center, registeredOn));
     }
 
     @Transactional

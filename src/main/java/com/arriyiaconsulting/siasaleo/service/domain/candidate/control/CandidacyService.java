@@ -12,6 +12,11 @@ import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
 import com.arriyiaconsulting.siasaleo.service.domain.party.repository.PersonRepository;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.repository.PoliticalPartyRepository;
+import com.arriyiaconsulting.siasaleo.service.domain.voter.control.VoterRegistrationService;
+import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.CandidateRegistrationFormDto;
+import com.arriyiaconsulting.siasaleo.service.domain.party.control.PersonProfileService;
+import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ProfileDetails;
+import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.VoterRegistrationDto;
 import jakarta.data.page.PageRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -46,11 +51,26 @@ public class CandidacyService {
     @Inject
     private PoliticalPartyRepository politicalParties;
 
+    @Inject
+    private VoterRegistrationService voters;
+
+    @Inject
+    private PersonProfileService profiles;
+
+    /** Load the signed-in user's shared voter fields before rendering the form. */
+    public CandidateRegistrationFormDto registrationForm(Long accountId) {
+        Optional<Person> person = profiles.findFor(accountId);
+        Optional<VoterRegistrationDto> registration = person.flatMap(p -> voters.findCurrent(p.getId()));
+        ProfileDetails profile = person.map(p -> new ProfileDetails(p.getFirstName(),
+                p.getLastName(), p.getDateOfBirth(), p.getGender())).orElse(null);
+        return new CandidateRegistrationFormDto(registration.isPresent(), registration.isPresent(),
+                profile, registration.orElse(null));
+    }
+
     @Transactional
-    public CandidacyDto register(RegisterCandidateRequest request) {
-        if ((request.personId() == null) == (request.person() == null)) {
-            throw new IllegalArgumentException(
-                    "Provide exactly one of personId or person");
+    public CandidacyDto register(Long accountId, RegisterCandidateRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Candidate registration is required");
         }
         Contest contest = contests.findById(request.contestId())
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -61,37 +81,31 @@ public class CandidacyService {
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Political party not found: " + request.politicalPartyId()));
         }
-        Person person = resolvePerson(request, contest);
+        Person person = profiles.resolveFor(accountId, request.profile());
+        if (candidacies.findByPersonAndContest(person.getId(), contest.getId()).isPresent()) {
+            throw new IllegalArgumentException("You are already registered in contest " + contest.getId());
+        }
         // A missing seed row is a deployment defect, not a caller error, so
         // this surfaces as a 500 rather than a 400.
         CandidacyStatus initialStatus = statuses.findByStatusName(INITIAL_STATUS)
                 .orElseThrow(() -> new IllegalStateException(
                         "Candidacy status " + INITIAL_STATUS + " is not seeded"));
 
+        // Recheck at submission; an earlier form response is not authoritative.
+        // Existing voters cannot rewrite shared fields through this form.
+        if (voters.findCurrent(person.getId()).isEmpty() && request.profile() != null) {
+            ProfileDetails details = request.profile();
+            person.updateDetails(details.firstName().trim(), details.lastName().trim(),
+                    details.dateOfBirth(), details.gender());
+            person = persons.save(person);
+        }
+        // Joins this transaction: person, voter registration and candidacy
+        // either all succeed or all roll back.
+        voters.ensureActiveForCandidate(person, request.voterRegistration());
+
         Candidacy candidacy = candidacies.save(
                 new Candidacy(person, contest, party, initialStatus));
         return CandidacyDto.from(candidacy);
-    }
-
-    private Person resolvePerson(RegisterCandidateRequest request, Contest contest) {
-        if (request.personId() == null) {
-            // A person created here cannot already be in the contest, so no
-            // duplicate check is needed.
-            RegisterCandidateRequest.NewPerson details = request.person();
-            return persons.save(new Person(details.firstName(), details.lastName(),
-                    details.dateOfBirth(), details.gender()));
-        }
-        Person person = persons.findById(request.personId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Person not found: " + request.personId()));
-        // The unique (person_id, contest_id) constraint is the real
-        // guarantee; this check just turns the common case into a friendly
-        // outcome.
-        if (candidacies.findByPersonAndContest(person.getId(), contest.getId()).isPresent()) {
-            throw new IllegalArgumentException("Person " + person.getId()
-                    + " is already registered in contest " + contest.getId());
-        }
-        return person;
     }
 
     public Optional<CandidacyDto> findById(Long id) {

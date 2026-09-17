@@ -3,9 +3,14 @@ package com.arriyiaconsulting.siasaleo.service.domain.candidate.boundary;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.control.CandidacyService;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.CandidacyDto;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.RegisterCandidateRequest;
+import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.CandidateRegistrationFormDto;
+import com.arriyiaconsulting.siasaleo.service.security.identity.control.CallerAccounts;
+import jakarta.ws.rs.core.SecurityContext;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
@@ -21,6 +26,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.util.List;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 @Path("candidacies")
 @RequestScoped
@@ -32,6 +40,16 @@ public class CandidacyResource {
 
     @Inject
     private CandidacyService service;
+
+    @Inject
+    private CallerAccounts callers;
+
+    @GET
+    @Path("me/registration-form")
+    @RolesAllowed({"USER", "ADMINISTRATOR"})
+    public CandidateRegistrationFormDto registrationForm(@Context SecurityContext security) {
+        return service.registrationForm(callers.requireId(security));
+    }
 
     @GET
     @Path("{id}")
@@ -52,8 +70,13 @@ public class CandidacyResource {
     }
 
     @POST
-    public Response register(@Valid RegisterCandidateRequest request, @Context UriInfo uriInfo) {
-        CandidacyDto created = service.register(request);
+    @RolesAllowed({"USER", "ADMINISTRATOR"})
+    @APIResponse(responseCode = "201", description = "Candidate registered",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                    schema = @Schema(implementation = CandidacyDto.class)))
+    public Response register(@NotNull @Valid RegisterCandidateRequest request, @Context UriInfo uriInfo,
+                             @Context SecurityContext security) {
+        CandidacyDto created = service.register(callers.requireId(security), request);
         return Response.created(uriInfo.getAbsolutePathBuilder()
                         .path(String.valueOf(created.id())).build())
                 .entity(created)

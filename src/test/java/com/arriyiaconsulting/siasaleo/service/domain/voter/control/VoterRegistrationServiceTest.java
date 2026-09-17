@@ -10,6 +10,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.RegisterVoterRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.TransferVoterRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.VoterRegistrationDto;
+import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.VoterRegistrationDetails;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.entity.VoterRegistration;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.entity.VoterRegistrationStatus;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.repository.VoterRegistrationRepository;
@@ -353,6 +354,98 @@ class VoterRegistrationServiceTest {
 
     private Person givenPerson() {
         return givenPersonBornOn(LocalDate.of(1994, 2, 8));
+    }
+
+    @Test
+    void candidateWithActiveRegistrationNeedsNoVoterDetails() {
+        Person person = givenPerson();
+        givenActiveRegistrationAt(CENTER_ID, "Kibra Primary School");
+        service.ensureActiveForCandidate(person, null);
+        verify(registrations, never()).save(any());
+        verify(electoralAreas, never()).findById(anyLong());
+    }
+
+    @Test
+    void inlineDetailsDoNotTransferAnAlreadyRegisteredCandidate() {
+        Person person = givenPerson();
+        givenActiveRegistrationAt(CENTER_ID, "Kibra Primary School");
+        service.ensureActiveForCandidate(person, new VoterRegistrationDetails(7L, null));
+        verify(registrations, never()).save(any());
+        verify(electoralAreas, never()).findById(anyLong());
+    }
+
+    @Test
+    void candidateWithoutActiveRegistrationMustSupplyVoterDetails() {
+        Person person = givenPerson();
+        givenNoActiveRegistration();
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> service.ensureActiveForCandidate(person, null));
+        assertTrue(error.getMessage().contains("voterRegistration.registrationCenterId"));
+        verify(registrations, never()).save(any());
+    }
+
+    @Test
+    void registersCandidateAtCentreUsingResolvedPersonAndDefaultDate() {
+        Person person = givenPerson();
+        givenNoActiveRegistration();
+        givenCenter(CENTER_ID, "Kibra Primary School", "REGISTRATION_CENTER");
+
+        service.ensureActiveForCandidate(person, new VoterRegistrationDetails(CENTER_ID, null));
+
+        ArgumentCaptor<VoterRegistration> saved = ArgumentCaptor.forClass(VoterRegistration.class);
+        verify(registrations).save(saved.capture());
+        assertEquals(person, saved.getValue().getPerson());
+        assertEquals(CENTER_ID, saved.getValue().getRegistrationCenter().getId());
+        assertEquals(LocalDate.now(), saved.getValue().getRegistrationDate());
+        assertEquals(VoterRegistrationStatus.ACTIVE, saved.getValue().getStatus());
+        verify(profiles, never()).resolveFor(anyLong(), any());
+    }
+
+    @Test
+    void rejectsUnderageCandidateVoterRegistration() {
+        Person person = givenPersonBornOn(LocalDate.of(2010, 6, 1));
+        givenCenter(CENTER_ID, "Kibra Primary School", "REGISTRATION_CENTER");
+        assertThrows(IllegalArgumentException.class, () -> service.ensureActiveForCandidate(person,
+                new VoterRegistrationDetails(CENTER_ID, LocalDate.of(2026, 5, 20))));
+        verify(registrations, never()).save(any());
+    }
+
+    @Test
+    void candidateCanRegisterOnEighteenthBirthday() {
+        Person person = givenPersonBornOn(LocalDate.of(2008, 5, 20));
+        givenCenter(CENTER_ID, "Kibra Primary School", "REGISTRATION_CENTER");
+        LocalDate date = LocalDate.of(2026, 5, 20);
+        service.ensureActiveForCandidate(person, new VoterRegistrationDetails(CENTER_ID, date));
+        ArgumentCaptor<VoterRegistration> saved = ArgumentCaptor.forClass(VoterRegistration.class);
+        verify(registrations).save(saved.capture());
+        assertEquals(date, saved.getValue().getRegistrationDate());
+    }
+
+    @Test
+    void candidateCannotRegisterAtNonCentre() {
+        Person person = givenPerson();
+        givenCenter(CENTER_ID, "Kibra", "WARD");
+        assertThrows(IllegalArgumentException.class, () -> service.ensureActiveForCandidate(person,
+                new VoterRegistrationDetails(CENTER_ID, null)));
+        verify(registrations, never()).save(any());
+    }
+
+    @Test
+    void candidateCannotRegisterAtUnknownCentre() {
+        Person person = givenPerson();
+        assertThrows(IllegalArgumentException.class, () -> service.ensureActiveForCandidate(person,
+                new VoterRegistrationDetails(999L, null)));
+        verify(registrations, never()).save(any());
+    }
+
+    @Test
+    void candidateCannotRegisterWithFutureDateOrMissingCentre() {
+        Person person = givenPerson();
+        assertThrows(IllegalArgumentException.class, () -> service.ensureActiveForCandidate(person,
+                new VoterRegistrationDetails(CENTER_ID, LocalDate.now().plusDays(1))));
+        assertThrows(IllegalArgumentException.class, () -> service.ensureActiveForCandidate(person,
+                new VoterRegistrationDetails(null, null)));
+        verify(registrations, never()).save(any());
     }
 
     private Person givenPersonBornOn(LocalDate dateOfBirth) {

@@ -11,6 +11,8 @@ import jakarta.ws.rs.core.SecurityContext;
 import java.lang.reflect.Method;
 import java.security.Principal;
 import java.util.Set;
+import java.util.Arrays;
+import com.arriyiaconsulting.siasaleo.service.domain.candidate.boundary.CandidacyResource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -111,6 +113,21 @@ class RolesAllowedFeatureTest {
                 filterFor(GuardedResource.class, "inherited").decide(null));
     }
 
+    @Test
+    void candidateRegistrationIsAvailableToOrdinarySignedInUsers() {
+        RolesAllowedFilter filter = filterFor(CandidacyResource.class, "register");
+        assertEquals(Decision.CHALLENGE, filter.decide(null));
+        assertEquals(Decision.ALLOW, filter.decide(authenticatedWith(Set.of("USER"))));
+        assertEquals(Decision.ALLOW, filter.decide(authenticatedWith(Set.of("ADMINISTRATOR"))));
+    }
+
+    @Test
+    void candidateFormIsAvailableToOrdinarySignedInUsers() {
+        RolesAllowedFilter filter = filterFor(CandidacyResource.class, "registrationForm");
+        assertEquals(Decision.CHALLENGE, filter.decide(null));
+        assertEquals(Decision.ALLOW, filter.decide(authenticatedWith(Set.of("USER"))));
+    }
+
     /** Runs the feature and hands back the single filter it registered. */
     private static RolesAllowedFilter filterFor(Class<?> resource, String methodName) {
         FeatureContext context = configure(resource, methodName);
@@ -139,10 +156,8 @@ class RolesAllowedFeatureTest {
     }
 
     private static Method methodOf(Class<?> resource, String name) {
-        try {
-            return resource.getDeclaredMethod(name);
-        } catch (NoSuchMethodException e) {
-            throw new AssertionError(e);
-        }
+        return Arrays.stream(resource.getDeclaredMethods())
+                .filter(method -> method.getName().equals(name)).findFirst()
+                .orElseThrow(() -> new AssertionError("Method not found: " + name));
     }
 }
