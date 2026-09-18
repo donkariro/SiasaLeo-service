@@ -1,5 +1,7 @@
 package com.arriyiaconsulting.siasaleo.service.domain.election.control;
 
+import org.mapstruct.factory.Mappers;
+import com.arriyiaconsulting.siasaleo.service.domain.election.mapping.ElectionMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.election.dto.*;
 import com.arriyiaconsulting.siasaleo.service.domain.election.entity.*;
 import com.arriyiaconsulting.siasaleo.service.domain.election.repository.*;
@@ -18,6 +20,10 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ElectionServiceTest {
+
+    @Spy
+    private ElectionMapper electionMapper = Mappers.getMapper(ElectionMapper.class);
+
     @Mock ElectionCycleRepository cycles;
     @Mock ElectionTypeRepository types;
     @Mock ElectionStatusRepository statuses;

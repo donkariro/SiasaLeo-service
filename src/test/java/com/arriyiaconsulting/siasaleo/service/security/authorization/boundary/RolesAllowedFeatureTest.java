@@ -13,6 +13,8 @@ import java.security.Principal;
 import java.util.Set;
 import java.util.Arrays;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.boundary.CandidacyResource;
+import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.boundary.GeographySnapshotResource;
+import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.boundary.SnapshotAreaResource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -126,6 +128,31 @@ class RolesAllowedFeatureTest {
         RolesAllowedFilter filter = filterFor(CandidacyResource.class, "registrationForm");
         assertEquals(Decision.CHALLENGE, filter.decide(null));
         assertEquals(Decision.ALLOW, filter.decide(authenticatedWith(Set.of("USER"))));
+    }
+
+    @Test
+    void allSnapshotWritesRequireAdministrator() {
+        for (String name : Set.of("create", "update", "publish", "revision")) {
+            RolesAllowedFilter filter = filterFor(GeographySnapshotResource.class, name);
+            assertEquals(Decision.CHALLENGE, filter.decide(null));
+            assertEquals(Decision.FORBID, filter.decide(authenticatedWith(Set.of("USER"))));
+            assertEquals(Decision.ALLOW, filter.decide(authenticatedWith(Set.of("ADMINISTRATOR"))));
+        }
+        for (String name : Set.of("create", "update", "delete", "review", "correspondence")) {
+            RolesAllowedFilter filter = filterFor(SnapshotAreaResource.class, name);
+            assertEquals(Decision.CHALLENGE, filter.decide(null));
+            assertEquals(Decision.FORBID, filter.decide(authenticatedWith(Set.of("USER"))));
+            assertEquals(Decision.ALLOW, filter.decide(authenticatedWith(Set.of("ADMINISTRATOR"))));
+        }
+    }
+
+    @Test
+    void historicalBrowsingAllowsAnonymousCallers() {
+        verify(configure(GeographySnapshotResource.class, "list"), never()).register(any(Object.class));
+        verify(configure(GeographySnapshotResource.class, "get"), never()).register(any(Object.class));
+        for (String name : Set.of("list", "get", "children", "subtree")) {
+            verify(configure(SnapshotAreaResource.class, name), never()).register(any(Object.class));
+        }
     }
 
     /** Runs the feature and hands back the single filter it registered. */

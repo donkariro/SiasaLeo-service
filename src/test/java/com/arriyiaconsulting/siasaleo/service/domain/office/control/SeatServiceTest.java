@@ -1,5 +1,7 @@
 package com.arriyiaconsulting.siasaleo.service.domain.office.control;
 
+import org.mapstruct.factory.Mappers;
+import com.arriyiaconsulting.siasaleo.service.domain.office.mapping.OfficeMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.office.entity.Office;
 import com.arriyiaconsulting.siasaleo.service.domain.office.repository.*;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.entity.ElectoralArea;
@@ -16,6 +18,10 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SeatServiceTest {
+
+    @Spy
+    private OfficeMapper officeMapper = Mappers.getMapper(OfficeMapper.class);
+
     @Mock SeatRepository seats;
     @Mock OfficeRepository offices;
     @Mock ElectoralAreaRepository areas;

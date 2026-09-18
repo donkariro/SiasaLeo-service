@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.mapping.PoliticalPartyMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
 import com.arriyiaconsulting.siasaleo.service.domain.party.repository.PersonRepository;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.AppointOfficialRequest;
@@ -31,6 +32,9 @@ import java.util.Optional;
 public class PoliticalPartyOfficialService {
 
     @Inject
+    private PoliticalPartyMapper politicalPartyMapper;
+
+    @Inject
     private PoliticalPartyOfficialRepository officials;
 
     @Inject
@@ -51,9 +55,9 @@ public class PoliticalPartyOfficialService {
             throw new IllegalArgumentException("Person " + official.getId()
                     + " already holds '" + positionName + "' at party " + party.getId());
         }
-        return PoliticalPartyOfficialDto.from(officials.save(
-                new PoliticalPartyOfficial(official, party, positionName,
-                        dateOrToday(request.fromDate()), request.photo(), request.about())));
+        return politicalPartyMapper.toPoliticalPartyOfficialDto(officials.save(
+                politicalPartyMapper.toOfficial(request, official, party, positionName,
+                        dateOrToday(request.fromDate()))));
     }
 
     @Transactional
@@ -74,11 +78,11 @@ public class PoliticalPartyOfficialService {
                     + ", the day the tenure began");
         }
         tenure.end(leftOn);
-        return PoliticalPartyOfficialDto.from(officials.save(tenure));
+        return politicalPartyMapper.toPoliticalPartyOfficialDto(officials.save(tenure));
     }
 
     public Optional<PoliticalPartyOfficialDto> findById(Long id) {
-        return officials.findById(id).map(PoliticalPartyOfficialDto::from);
+        return officials.findById(id).map(politicalPartyMapper::toPoliticalPartyOfficialDto);
     }
 
     /**
@@ -92,14 +96,14 @@ public class PoliticalPartyOfficialService {
         List<PoliticalPartyOfficial> found = current
                 ? officials.findCurrentByParty(partyId, pageRequest)
                 : officials.findByParty(partyId, pageRequest);
-        return found.stream().map(PoliticalPartyOfficialDto::from).toList();
+        return found.stream().map(politicalPartyMapper::toPoliticalPartyOfficialDto).toList();
     }
 
     /** Every party office the person has held, the most recent first. */
     public List<PoliticalPartyOfficialDto> findByPerson(Long personId) {
         requirePerson(personId);
         return officials.findByPerson(personId).stream()
-                .map(PoliticalPartyOfficialDto::from)
+                .map(politicalPartyMapper::toPoliticalPartyOfficialDto)
                 .toList();
     }
 

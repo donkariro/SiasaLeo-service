@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.mapping.PoliticalPartyMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.AdoptSloganRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartySloganDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
@@ -22,6 +23,9 @@ import java.util.List;
 public class PoliticalPartySloganService {
 
     @Inject
+    private PoliticalPartyMapper politicalPartyMapper;
+
+    @Inject
     private PoliticalPartySloganRepository slogans;
 
     @Inject
@@ -30,8 +34,7 @@ public class PoliticalPartySloganService {
     @Transactional
     public PoliticalPartySloganDto adopt(Long partyId, AdoptSloganRequest request) {
         PoliticalParty party = requireParty(partyId);
-        return PoliticalPartySloganDto.from(slogans.save(new PoliticalPartySlogan(
-                party, request.slogan().trim(), dateOrToday(request.fromDate()))));
+        return politicalPartyMapper.toPoliticalPartySloganDto(slogans.save(politicalPartyMapper.toSlogan(request, party, dateOrToday(request.fromDate()))));
     }
 
     /**
@@ -61,7 +64,7 @@ public class PoliticalPartySloganService {
                     + ", the day the slogan came into use");
         }
         slogan.end(retiredOn);
-        return PoliticalPartySloganDto.from(slogans.save(slogan));
+        return politicalPartyMapper.toPoliticalPartySloganDto(slogans.save(slogan));
     }
 
     /**
@@ -73,7 +76,7 @@ public class PoliticalPartySloganService {
         List<PoliticalPartySlogan> found = current
                 ? slogans.findCurrentByParty(partyId)
                 : slogans.findByParty(partyId);
-        return found.stream().map(PoliticalPartySloganDto::from).toList();
+        return found.stream().map(politicalPartyMapper::toPoliticalPartySloganDto).toList();
     }
 
     private PoliticalParty requireParty(Long partyId) {

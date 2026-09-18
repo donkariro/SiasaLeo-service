@@ -1,9 +1,9 @@
 package com.arriyiaconsulting.siasaleo.service.domain.education.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.education.mapping.EducationMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.education.dto.*;
 import com.arriyiaconsulting.siasaleo.service.domain.education.entity.*;
 import com.arriyiaconsulting.siasaleo.service.domain.education.repository.*;
-import com.arriyiaconsulting.siasaleo.service.domain.party.entity.OrganizationName;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.OrganizationType;
 import jakarta.data.page.PageRequest;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,6 +17,9 @@ import java.util.Optional;
 
 @ApplicationScoped
 public class EducationCatalogService {
+
+    @Inject
+    private EducationMapper educationMapper;
     @Inject private EducationLevelRepository levels;
     @Inject private EducationalInstitutionTypeRepository types;
     @Inject private FieldOfStudyRepository fields;
@@ -24,19 +27,19 @@ public class EducationCatalogService {
     @PersistenceContext private EntityManager entityManager;
 
     public List<EducationLevelDto> levels() {
-        return levels.findAllOrdered().stream().map(EducationLevelDto::from).toList();
+        return levels.findAllOrdered().stream().map(educationMapper::toEducationLevelDto).toList();
     }
 
     public List<InstitutionTypeDto> institutionTypes() {
-        return types.findAllOrdered().stream().map(InstitutionTypeDto::from).toList();
+        return types.findAllOrdered().stream().map(educationMapper::toInstitutionTypeDto).toList();
     }
 
     public List<FieldOfStudyDto> fields() {
-        return fields.findAllOrdered().stream().map(FieldOfStudyDto::from).toList();
+        return fields.findAllOrdered().stream().map(educationMapper::toFieldOfStudyDto).toList();
     }
 
     public Optional<InstitutionDto> findInstitution(Long id) {
-        return institutions.findById(id).map(InstitutionDto::from);
+        return institutions.findById(id).map(educationMapper::toInstitutionDto);
     }
 
     public List<InstitutionDto> institutions(Long typeId, String search, int page, int size) {
@@ -50,7 +53,7 @@ public class EducationCatalogService {
                 : "%" + search.trim().toLowerCase(Locale.ROOT) + "%";
         return institutions.search(typeId, pattern,
                 PageRequest.ofPage(page + 1L).size(Math.max(1, Math.min(size, 500))).withoutTotal())
-                .stream().map(InstitutionDto::from).toList();
+                .stream().map(educationMapper::toInstitutionDto).toList();
     }
 
     @Transactional
@@ -63,9 +66,7 @@ public class EducationCatalogService {
         OrganizationType orgType = entityManager.createQuery(
                 "SELECT t FROM OrganizationType t WHERE t.typeName = :name", OrganizationType.class)
                 .setParameter("name", "EDUCATIONAL_INSTITUTION").getSingleResult();
-        return InstitutionDto.from(institutions.save(new EducationalInstitution(
-                new OrganizationName(request.name().trim(), null), orgType,
-                request.registrationNumber(), type)));
+        return educationMapper.toInstitutionDto(institutions.save(educationMapper.toEntity(request, orgType, type)));
     }
 
     private EducationalInstitutionType requireType(Long id) {

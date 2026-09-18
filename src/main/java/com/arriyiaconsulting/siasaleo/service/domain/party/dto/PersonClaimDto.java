@@ -1,7 +1,5 @@
 package com.arriyiaconsulting.siasaleo.service.domain.party.dto;
 
-import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
-import com.arriyiaconsulting.siasaleo.service.domain.party.entity.PersonClaim;
 import java.time.OffsetDateTime;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -21,12 +19,4 @@ public record PersonClaimDto(
         OffsetDateTime decidedAt,
         Long decidedBy,
         String decisionNote) {
-
-    public static PersonClaimDto from(PersonClaim claim) {
-        Person person = claim.getPerson();
-        return new PersonClaimDto(claim.getId(), claim.getUserAccountId(),
-                person.getId(), person.getFirstName(), person.getLastName(),
-                claim.getStatus().name(), claim.getEvidence(), claim.getSubmittedAt(),
-                claim.getDecidedAt(), claim.getDecidedBy(), claim.getDecisionNote());
-    }
 }

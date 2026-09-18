@@ -1,11 +1,11 @@
 package com.arriyiaconsulting.siasaleo.service.security.identity.control;
 
+import com.arriyiaconsulting.siasaleo.service.security.identity.mapping.IdentityMapper;
 import com.arriyiaconsulting.siasaleo.service.security.authorization.control.RoleAssignments;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.RegisterRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.RegistrationResult;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.ResendCodeRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.ResendResult;
-import com.arriyiaconsulting.siasaleo.service.security.identity.dto.UserAccountDto;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.VerificationResult;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.VerifyRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.entity.Identifier;
@@ -34,6 +34,9 @@ import java.util.Optional;
  */
 @ApplicationScoped
 public class RegistrationService {
+
+    @Inject
+    private IdentityMapper identityMapper;
 
     private static final int MIN_PASSWORD_LENGTH = 8;
     // Package-private so RoutingVerificationSender can quote the real expiry
@@ -84,7 +87,7 @@ public class RegistrationService {
         UserAccount account = accounts.save(new UserAccount(
                 identifier, passwords.generate(request.password())));
         issueCode(account, identifier);
-        return new RegistrationResult.Registered(UserAccountDto.from(account));
+        return new RegistrationResult.Registered(identityMapper.toUserAccountDto(account));
     }
 
     @Transactional
@@ -137,7 +140,7 @@ public class RegistrationService {
         // the baseline role is granted; without it every @RolesAllowed
         // endpoint would refuse a perfectly valid account.
         roleAssignments.grantDefaultRole(verified.getId());
-        return new VerificationResult.Verified(UserAccountDto.from(verified));
+        return new VerificationResult.Verified(identityMapper.toUserAccountDto(verified));
     }
 
     @Transactional

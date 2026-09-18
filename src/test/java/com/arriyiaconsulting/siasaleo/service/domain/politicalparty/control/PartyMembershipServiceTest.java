@@ -1,5 +1,8 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control;
 
+import org.mapstruct.factory.Mappers;
+import org.mockito.Spy;
+import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.mapping.PoliticalPartyMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
 import com.arriyiaconsulting.siasaleo.service.domain.party.repository.PersonRepository;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.DefectToPartyRequest;
@@ -45,6 +48,10 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class PartyMembershipServiceTest {
+
+    @Spy
+    private PoliticalPartyMapper politicalPartyMapper = Mappers.getMapper(PoliticalPartyMapper.class);
+
 
     private static final long PERSON_ID = 5L;
     private static final long PARTY_ID = 3L;

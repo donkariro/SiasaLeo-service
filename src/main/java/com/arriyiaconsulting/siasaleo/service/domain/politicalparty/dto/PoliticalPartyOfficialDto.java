@@ -1,8 +1,5 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto;
 
-import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
-import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
-import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalPartyOfficial;
 import java.time.LocalDate;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -27,14 +24,4 @@ public record PoliticalPartyOfficialDto(
         @Schema(required = true, nullable = true) String photo,
         @Schema(required = true, nullable = true) String about,
         @Schema(required = true) boolean current) {
-
-    public static PoliticalPartyOfficialDto from(PoliticalPartyOfficial tenure) {
-        Person official = tenure.getOfficial();
-        PoliticalParty party = tenure.getPoliticalParty();
-        return new PoliticalPartyOfficialDto(tenure.getId(), official.getId(),
-                official.getFirstName(), official.getLastName(),
-                party.getId(), party.getName(), party.getAbbreviation(),
-                tenure.getPositionName(), tenure.getFromDate(), tenure.getUptoDate(),
-                tenure.getPhoto(), tenure.getAbout(), tenure.isCurrent());
-    }
 }

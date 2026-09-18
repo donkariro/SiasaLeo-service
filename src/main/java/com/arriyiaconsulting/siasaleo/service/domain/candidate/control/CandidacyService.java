@@ -1,5 +1,7 @@
 package com.arriyiaconsulting.siasaleo.service.domain.candidate.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.party.mapping.PersonMapper;
+import com.arriyiaconsulting.siasaleo.service.domain.candidate.mapping.CandidacyMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.CandidacyDto;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.RegisterCandidateRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.entity.Candidacy;
@@ -33,6 +35,12 @@ import java.util.Optional;
 @ApplicationScoped
 public class CandidacyService {
 
+    @Inject
+    private PersonMapper personMapper;
+
+    @Inject
+    private CandidacyMapper candidacyMapper;
+
     // First stage of the candidacy lifecycle seeded by V21.
     static final String INITIAL_STATUS = "EXPRESSED_INTEREST";
 
@@ -61,8 +69,7 @@ public class CandidacyService {
     public CandidateRegistrationFormDto registrationForm(Long accountId) {
         Optional<Person> person = profiles.findFor(accountId);
         Optional<VoterRegistrationDto> registration = person.flatMap(p -> voters.findCurrent(p.getId()));
-        ProfileDetails profile = person.map(p -> new ProfileDetails(p.getFirstName(),
-                p.getLastName(), p.getDateOfBirth(), p.getGender())).orElse(null);
+        ProfileDetails profile = person.map(personMapper::toProfileDetails).orElse(null);
         return new CandidateRegistrationFormDto(registration.isPresent(), registration.isPresent(),
                 profile, registration.orElse(null));
     }
@@ -104,12 +111,12 @@ public class CandidacyService {
         voters.ensureActiveForCandidate(person, request.voterRegistration());
 
         Candidacy candidacy = candidacies.save(
-                new Candidacy(person, contest, party, initialStatus));
-        return CandidacyDto.from(candidacy);
+                candidacyMapper.toEntity(person, contest, party, initialStatus));
+        return candidacyMapper.toCandidacyDto(candidacy);
     }
 
     public Optional<CandidacyDto> findById(Long id) {
-        return candidacies.findById(id).map(CandidacyDto::from);
+        return candidacies.findById(id).map(candidacyMapper::toCandidacyDto);
     }
 
     public List<CandidacyDto> findByContest(Long contestId, int page, int size) {
@@ -117,7 +124,7 @@ public class CandidacyService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Contest not found: " + contestId));
         return candidacies.findByContest(contestId, pageRequest(page, size)).stream()
-                .map(CandidacyDto::from)
+                .map(candidacyMapper::toCandidacyDto)
                 .toList();
     }
 

@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.election.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.election.mapping.ElectionMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.election.dto.*;
 import com.arriyiaconsulting.siasaleo.service.domain.election.entity.*;
 import com.arriyiaconsulting.siasaleo.service.domain.election.repository.*;
@@ -12,29 +13,32 @@ import java.util.Optional;
 
 @ApplicationScoped
 public class ElectionService {
+
+    @Inject
+    private ElectionMapper electionMapper;
     @Inject private ElectionCycleRepository cycles;
     @Inject private ElectionTypeRepository types;
     @Inject private ElectionStatusRepository statuses;
     @Inject private ElectionEventRepository events;
 
     public List<ElectionCycleDto> cycles() {
-        return cycles.findAllOrdered().stream().map(ElectionCycleDto::from).toList();
+        return cycles.findAllOrdered().stream().map(electionMapper::toElectionCycleDto).toList();
     }
 
     public Optional<ElectionCycleDto> findCycle(Long id) {
-        return cycles.findById(id).map(ElectionCycleDto::from);
+        return cycles.findById(id).map(electionMapper::toElectionCycleDto);
     }
 
     public List<ElectionTypeDto> types() {
-        return types.findAllOrdered().stream().map(ElectionTypeDto::from).toList();
+        return types.findAllOrdered().stream().map(electionMapper::toElectionTypeDto).toList();
     }
 
     public List<ElectionStatusDto> statuses() {
-        return statuses.findAllOrdered().stream().map(ElectionStatusDto::from).toList();
+        return statuses.findAllOrdered().stream().map(electionMapper::toElectionStatusDto).toList();
     }
 
     public Optional<ElectionEventDto> findEvent(Long id) {
-        return events.findById(id).map(ElectionEventDto::from);
+        return events.findById(id).map(electionMapper::toElectionEventDto);
     }
 
     public List<ElectionEventDto> events(Long cycleId, Long typeId, Long statusId, int page, int size) {
@@ -42,7 +46,7 @@ public class ElectionService {
         if (cycleId != null) requireCycle(cycleId);
         if (typeId != null) requireType(typeId);
         if (statusId != null) requireStatus(statusId);
-        return events.search(cycleId, typeId, statusId, paging).stream().map(ElectionEventDto::from).toList();
+        return events.search(cycleId, typeId, statusId, paging).stream().map(electionMapper::toElectionEventDto).toList();
     }
 
     @Transactional
@@ -60,8 +64,8 @@ public class ElectionService {
         ElectionType type = requireType(request.typeId());
         ElectionStatus scheduled = statuses.findByStatusName("SCHEDULED")
                 .orElseThrow(() -> new IllegalStateException("Election status SCHEDULED is not seeded"));
-        return ElectionEventDto.from(events.save(
-                new ElectionEvent(cycle, request.electionDate(), type, scheduled)));
+        return electionMapper.toElectionEventDto(events.save(
+                electionMapper.toEntity(request, cycle, type, scheduled)));
     }
 
     @Transactional
@@ -73,7 +77,7 @@ public class ElectionService {
             ElectionStatus next = requireStatus(request.statusId());
             String current = event.getStatus().getStatusName();
             String target = next.getStatusName();
-            if (current.equals(target)) return ElectionEventDto.from(event);
+            if (current.equals(target)) return electionMapper.toElectionEventDto(event);
             boolean allowed = switch (current) {
                 case "SCHEDULED" -> target.equals("ONGOING") || target.equals("CANCELLED");
                 case "ONGOING" -> target.equals("COMPLETED") || target.equals("NULLIFIED");
@@ -84,7 +88,7 @@ public class ElectionService {
                 throw new IllegalArgumentException("Cannot change election status from " + current + " to " + target);
             }
             event.setStatus(next);
-            return ElectionEventDto.from(events.save(event));
+            return electionMapper.toElectionEventDto(events.save(event));
         });
     }
 

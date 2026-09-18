@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.office.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.office.mapping.OfficeMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.office.dto.OfficeDto;
 import com.arriyiaconsulting.siasaleo.service.domain.office.repository.OfficeRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -12,14 +13,17 @@ import java.util.Optional;
 public class OfficeService {
 
     @Inject
+    private OfficeMapper officeMapper;
+
+    @Inject
     private OfficeRepository offices;
 
     /** The complete, small office register in alphabetical order, without pagination. */
     public List<OfficeDto> findAll() {
-        return offices.findAllOrderedByName().stream().map(OfficeDto::from).toList();
+        return offices.findAllOrderedByName().stream().map(officeMapper::toOfficeDto).toList();
     }
 
     public Optional<OfficeDto> findById(Long id) {
-        return offices.findById(id).map(OfficeDto::from);
+        return offices.findById(id).map(officeMapper::toOfficeDto);
     }
 }

@@ -1,5 +1,7 @@
 package com.arriyiaconsulting.siasaleo.service.domain.education.control;
 
+import org.mapstruct.factory.Mappers;
+import com.arriyiaconsulting.siasaleo.service.domain.education.mapping.EducationMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.education.dto.*;
 import com.arriyiaconsulting.siasaleo.service.domain.education.entity.*;
 import com.arriyiaconsulting.siasaleo.service.domain.education.repository.*;
@@ -17,6 +19,10 @@ import static org.mockito.ArgumentMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class EducationCatalogServiceTest {
+
+    @Spy
+    private EducationMapper educationMapper = Mappers.getMapper(EducationMapper.class);
+
     @Mock EducationLevelRepository levels;
     @Mock EducationalInstitutionTypeRepository types;
     @Mock FieldOfStudyRepository fields;

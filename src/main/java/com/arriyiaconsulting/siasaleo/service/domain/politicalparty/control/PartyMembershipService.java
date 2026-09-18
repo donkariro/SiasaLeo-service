@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.mapping.PoliticalPartyMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
 import com.arriyiaconsulting.siasaleo.service.domain.party.repository.PersonRepository;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.DefectToPartyRequest;
@@ -35,6 +36,9 @@ import java.util.Optional;
 public class PartyMembershipService {
 
     @Inject
+    private PoliticalPartyMapper politicalPartyMapper;
+
+    @Inject
     private PartyMembershipRepository memberships;
 
     @Inject
@@ -56,8 +60,8 @@ public class PartyMembershipService {
             throw new IllegalArgumentException("Person " + person.getId()
                     + " already belongs to a party; defect or resign instead");
         }
-        return PartyMembershipDto.from(memberships.save(
-                new PartyMembership(person, party, dateOrToday(request.startDate()))));
+        return politicalPartyMapper.toPartyMembershipDto(memberships.save(
+                politicalPartyMapper.toMembership(person, party, dateOrToday(request.startDate()))));
     }
 
     @Transactional
@@ -83,8 +87,8 @@ public class PartyMembershipService {
         // idx_party_membership_current while the old one is still open.
         entityManager.flush();
 
-        return PartyMembershipDto.from(memberships.save(
-                new PartyMembership(person, party, startDate)));
+        return politicalPartyMapper.toPartyMembershipDto(memberships.save(
+                politicalPartyMapper.toMembership(person, party, startDate)));
     }
 
     @Transactional
@@ -98,24 +102,24 @@ public class PartyMembershipService {
                     + ", the day the membership began");
         }
         current.end(resignedOn);
-        return PartyMembershipDto.from(memberships.save(current));
+        return politicalPartyMapper.toPartyMembershipDto(memberships.save(current));
     }
 
     public Optional<PartyMembershipDto> findById(Long id) {
-        return memberships.findById(id).map(PartyMembershipDto::from);
+        return memberships.findById(id).map(politicalPartyMapper::toPartyMembershipDto);
     }
 
     /** The member's current membership, absent once they resign. */
     public Optional<PartyMembershipDto> findCurrentByPerson(Long personId) {
         requirePerson(personId);
-        return findCurrent(personId).map(PartyMembershipDto::from);
+        return findCurrent(personId).map(politicalPartyMapper::toPartyMembershipDto);
     }
 
     /** Every membership the person has held, the most recent first. */
     public List<PartyMembershipDto> findHistory(Long personId) {
         requirePerson(personId);
         return memberships.findByPerson(personId).stream()
-                .map(PartyMembershipDto::from)
+                .map(politicalPartyMapper::toPartyMembershipDto)
                 .toList();
     }
 
@@ -123,7 +127,7 @@ public class PartyMembershipService {
     public List<PartyMembershipDto> findByParty(Long partyId, int page, int size) {
         requireParty(partyId);
         return memberships.findCurrentByParty(partyId, pageRequest(page, size)).stream()
-                .map(PartyMembershipDto::from)
+                .map(politicalPartyMapper::toPartyMembershipDto)
                 .toList();
     }
 

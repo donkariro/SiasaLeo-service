@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.mapping.ElectoralAreaMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.dto.AreaTypeDto;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.dto.CreateElectoralAreaRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.dto.ElectoralAreaDto;
@@ -23,6 +24,9 @@ import java.util.Optional;
  */
 @ApplicationScoped
 public class ElectoralAreaService {
+
+    @Inject
+    private ElectoralAreaMapper electoralAreaMapper;
 
     // Required parent type for each creatable area type; WORLD is absent
     // because the root is seeded, never created through the API.
@@ -63,27 +67,26 @@ public class ElectoralAreaService {
         }
 
         String ancestorPath = parent.getAncestorPath() + parent.getId() + "/";
-        ElectoralArea area = electoralAreas.save(new ElectoralArea(
-                request.name(), request.areaCode(), type, parent, ancestorPath));
-        return ElectoralAreaDto.from(area);
+        ElectoralArea area = electoralAreas.save(electoralAreaMapper.toEntity(request, type, parent, ancestorPath));
+        return electoralAreaMapper.toElectoralAreaDto(area);
     }
 
     public Optional<ElectoralAreaDto> findById(Long id) {
-        return electoralAreas.findById(id).map(ElectoralAreaDto::from);
+        return electoralAreas.findById(id).map(electoralAreaMapper::toElectoralAreaDto);
     }
 
     public List<ElectoralAreaDto> findByType(String typeName, int page, int size) {
         areaTypes.findByName(typeName)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown area type: " + typeName));
         return electoralAreas.findByTypeName(typeName, pageRequest(page, size)).stream()
-                .map(ElectoralAreaDto::from)
+                .map(electoralAreaMapper::toElectoralAreaDto)
                 .toList();
     }
 
     public Optional<List<ElectoralAreaDto>> findChildren(Long parentId) {
         return electoralAreas.findById(parentId)
                 .map(parent -> electoralAreas.findChildren(parent.getId()).stream()
-                        .map(ElectoralAreaDto::from)
+                        .map(electoralAreaMapper::toElectoralAreaDto)
                         .toList());
     }
 
@@ -91,13 +94,13 @@ public class ElectoralAreaService {
         return electoralAreas.findById(id)
                 .map(area -> area.getAncestorPath() + area.getId() + "/%")
                 .map(prefix -> electoralAreas.findDescendants(prefix, pageRequest(page, size)).stream()
-                        .map(ElectoralAreaDto::from)
+                        .map(electoralAreaMapper::toElectoralAreaDto)
                         .toList());
     }
 
     public List<AreaTypeDto> findAllAreaTypes() {
         return areaTypes.findAllOrdered().stream()
-                .map(AreaTypeDto::from)
+                .map(electoralAreaMapper::toAreaTypeDto)
                 .toList();
     }
 

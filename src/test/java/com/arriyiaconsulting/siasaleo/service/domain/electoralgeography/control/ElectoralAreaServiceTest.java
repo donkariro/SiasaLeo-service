@@ -1,5 +1,8 @@
 package com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.control;
 
+import org.mapstruct.factory.Mappers;
+import org.mockito.Spy;
+import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.mapping.ElectoralAreaMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.dto.CreateElectoralAreaRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.dto.ElectoralAreaDto;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.entity.AreaType;
@@ -36,6 +39,10 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class ElectoralAreaServiceTest {
+
+    @Spy
+    private ElectoralAreaMapper electoralAreaMapper = Mappers.getMapper(ElectoralAreaMapper.class);
+
 
     @Mock
     private ElectoralAreaRepository electoralAreas;

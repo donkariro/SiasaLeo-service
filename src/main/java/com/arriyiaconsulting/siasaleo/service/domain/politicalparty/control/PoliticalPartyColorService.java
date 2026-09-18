@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.mapping.PoliticalPartyMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartyColorsDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.ReplaceColorsRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
@@ -26,6 +27,9 @@ import java.util.List;
  */
 @ApplicationScoped
 public class PoliticalPartyColorService {
+
+    @Inject
+    private PoliticalPartyMapper politicalPartyMapper;
 
     // display_order is 1-based, matching the ordinality V20 assigned.
     private static final int FIRST_DISPLAY_ORDER = 1;
@@ -57,20 +61,13 @@ public class PoliticalPartyColorService {
             replacements.add(colors.save(
                     new PoliticalPartyColor(party, colorName.trim(), displayOrder++)));
         }
-        return toDto(party.getId(), replacements);
+        return politicalPartyMapper.toColorsDto(party.getId(), replacements);
     }
 
     /** The party's colours in register order; empty where none are recorded. */
     public PoliticalPartyColorsDto findByParty(Long partyId) {
         requireParty(partyId);
-        return toDto(partyId, colors.findByParty(partyId));
-    }
-
-    private static PoliticalPartyColorsDto toDto(Long partyId,
-                                                 List<PoliticalPartyColor> found) {
-        return new PoliticalPartyColorsDto(partyId, found.stream()
-                .map(PoliticalPartyColor::getColorName)
-                .toList());
+        return politicalPartyMapper.toColorsDto(partyId, colors.findByParty(partyId));
     }
 
     private PoliticalParty requireParty(Long partyId) {

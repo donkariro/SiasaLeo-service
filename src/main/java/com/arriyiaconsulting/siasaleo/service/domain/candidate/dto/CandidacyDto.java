@@ -1,8 +1,5 @@
 package com.arriyiaconsulting.siasaleo.service.domain.candidate.dto;
 
-import com.arriyiaconsulting.siasaleo.service.domain.candidate.entity.Candidacy;
-import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
-import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 public record CandidacyDto(
@@ -18,15 +15,4 @@ public record CandidacyDto(
         @Schema(required = true, nullable = true) String partyName,
         @Schema(required = true, nullable = true) String partyAbbreviation,
         @Schema(required = true) String status) {
-
-    public static CandidacyDto from(Candidacy candidacy) {
-        Person person = candidacy.getPerson();
-        PoliticalParty party = candidacy.getPoliticalParty();
-        return new CandidacyDto(candidacy.getId(), person.getId(), person.getFirstName(),
-                person.getLastName(), candidacy.getContestId(),
-                party != null ? party.getId() : null,
-                party != null ? party.getName() : null,
-                party != null ? party.getAbbreviation() : null,
-                candidacy.getStatus().getStatusName());
-    }
 }

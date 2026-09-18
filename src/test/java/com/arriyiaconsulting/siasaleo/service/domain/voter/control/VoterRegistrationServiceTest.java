@@ -1,5 +1,8 @@
 package com.arriyiaconsulting.siasaleo.service.domain.voter.control;
 
+import org.mapstruct.factory.Mappers;
+import org.mockito.Spy;
+import com.arriyiaconsulting.siasaleo.service.domain.voter.mapping.VoterMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.entity.AreaType;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.entity.ElectoralArea;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.repository.ElectoralAreaRepository;
@@ -54,6 +57,10 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class VoterRegistrationServiceTest {
+
+    @Spy
+    private VoterMapper voterMapper = Mappers.getMapper(VoterMapper.class);
+
 
     private static final long ACCOUNT_ID = 3L;
     private static final long PERSON_ID = 5L;

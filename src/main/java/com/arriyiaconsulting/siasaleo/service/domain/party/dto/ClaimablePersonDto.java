@@ -1,6 +1,5 @@
 package com.arriyiaconsulting.siasaleo.service.domain.party.dto;
 
-import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
@@ -13,9 +12,4 @@ public record ClaimablePersonDto(
         @Schema(required = true) Long id,
         @Schema(required = true) String firstName,
         @Schema(required = true) String lastName) {
-
-    public static ClaimablePersonDto from(Person person) {
-        return new ClaimablePersonDto(
-                person.getId(), person.getFirstName(), person.getLastName());
-    }
 }

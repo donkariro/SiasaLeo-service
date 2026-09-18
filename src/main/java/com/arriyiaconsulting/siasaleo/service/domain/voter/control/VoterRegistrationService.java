@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.voter.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.voter.mapping.VoterMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.entity.ElectoralArea;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.repository.ElectoralAreaRepository;
 import com.arriyiaconsulting.siasaleo.service.domain.party.control.PersonProfileService;
@@ -40,6 +41,9 @@ import java.util.Optional;
 @ApplicationScoped
 public class VoterRegistrationService {
 
+    @Inject
+    private VoterMapper voterMapper;
+
     // Registration is per centre, not per polling station: stations are the
     // election-day streams a centre is split into (see V15).
     static final String REGISTRATION_CENTER = "REGISTRATION_CENTER";
@@ -76,8 +80,8 @@ public class VoterRegistrationService {
             throw new IllegalArgumentException(
                     "You already have an active voter registration; transfer it instead");
         }
-        return VoterRegistrationDto.from(registrations.save(
-                new VoterRegistration(person, center, registeredOn)));
+        return voterMapper.toVoterRegistrationDto(registrations.save(
+                voterMapper.toEntity(person, center, registeredOn)));
     }
 
     /**
@@ -105,7 +109,7 @@ public class VoterRegistrationService {
         ElectoralArea center = requireRegistrationCenter(details.registrationCenterId());
         requireVotingAge(person, registeredOn);
         // The existing partial unique index guarantees at most one ACTIVE row.
-        registrations.save(new VoterRegistration(person, center, registeredOn));
+        registrations.save(voterMapper.toEntity(person, center, registeredOn));
     }
 
     @Transactional
@@ -125,8 +129,8 @@ public class VoterRegistrationService {
         // idx_voter_registration_active while the old one is still ACTIVE.
         entityManager.flush();
 
-        return VoterRegistrationDto.from(registrations.save(
-                new VoterRegistration(person, center, dateOrToday(request.registrationDate()))));
+        return voterMapper.toVoterRegistrationDto(registrations.save(
+                voterMapper.toEntity(person, center, dateOrToday(request.registrationDate()))));
     }
 
     @Transactional
@@ -134,18 +138,18 @@ public class VoterRegistrationService {
         Person person = requirePersonFor(accountId);
         VoterRegistration current = requireActive(person.getId());
         current.deregister();
-        return VoterRegistrationDto.from(registrations.save(current));
+        return voterMapper.toVoterRegistrationDto(registrations.save(current));
     }
 
     public Optional<VoterRegistrationDto> findById(Long id) {
-        return registrations.findById(id).map(VoterRegistrationDto::from);
+        return registrations.findById(id).map(voterMapper::toVoterRegistrationDto);
     }
 
     /** The caller's current registration, absent until they declare one. */
     public Optional<VoterRegistrationDto> findCurrentFor(Long accountId) {
         return profiles.findFor(accountId)
                 .flatMap(person -> findActive(person.getId()))
-                .map(VoterRegistrationDto::from);
+                .map(voterMapper::toVoterRegistrationDto);
     }
 
     /** Every registration the caller has held, current one first. */
@@ -157,13 +161,13 @@ public class VoterRegistrationService {
 
     /** Another person's current registration — an administrative read. */
     public Optional<VoterRegistrationDto> findCurrent(Long personId) {
-        return findActive(personId).map(VoterRegistrationDto::from);
+        return findActive(personId).map(voterMapper::toVoterRegistrationDto);
     }
 
     /** Another person's registration trail — an administrative read. */
     public List<VoterRegistrationDto> findHistory(Long personId) {
         return registrations.findByPerson(personId).stream()
-                .map(VoterRegistrationDto::from)
+                .map(voterMapper::toVoterRegistrationDto)
                 .toList();
     }
 
@@ -172,7 +176,7 @@ public class VoterRegistrationService {
         requireRegistrationCenter(centerId);
         return registrations.findByCenterAndStatus(
                         centerId, VoterRegistrationStatus.ACTIVE, pageRequest(page, size)).stream()
-                .map(VoterRegistrationDto::from)
+                .map(voterMapper::toVoterRegistrationDto)
                 .toList();
     }
 

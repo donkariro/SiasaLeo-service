@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.party.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.party.mapping.PersonMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ProfileDetails;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
 import com.arriyiaconsulting.siasaleo.service.domain.party.repository.PersonRepository;
@@ -38,6 +39,9 @@ import java.util.Optional;
 public class PersonProfileService {
 
     @Inject
+    private PersonMapper personMapper;
+
+    @Inject
     private PersonRepository persons;
 
     @Inject
@@ -62,8 +66,7 @@ public class PersonProfileService {
                     "Account " + accountId + " has no person yet; profile details are required");
         }
 
-        Person person = persons.save(new Person(details.firstName().trim(),
-                details.lastName().trim(), details.dateOfBirth(), details.gender()));
+        Person person = persons.save(personMapper.toEntity(details));
         account.linkPerson(person.getId());
         accounts.save(account);
         return person;

@@ -1,6 +1,5 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto;
 
-import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalPartySymbol;
 import java.time.LocalDate;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -14,11 +13,4 @@ public record PoliticalPartySymbolDto(
         // Null while the symbol is the one on the ballot.
         @Schema(required = true, nullable = true) LocalDate uptoDate,
         @Schema(required = true) boolean current) {
-
-    public static PoliticalPartySymbolDto from(PoliticalPartySymbol symbol) {
-        return new PoliticalPartySymbolDto(symbol.getId(),
-                symbol.getPoliticalParty().getId(), symbol.getSymbolDescription(),
-                symbol.getImageFile(), symbol.getFromDate(), symbol.getUptoDate(),
-                symbol.isCurrent());
-    }
 }

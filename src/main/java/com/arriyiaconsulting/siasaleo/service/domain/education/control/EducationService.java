@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.education.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.education.mapping.EducationMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.education.dto.*;
 import com.arriyiaconsulting.siasaleo.service.domain.education.entity.*;
 import com.arriyiaconsulting.siasaleo.service.domain.education.repository.*;
@@ -14,6 +15,9 @@ import java.util.NoSuchElementException;
 
 @ApplicationScoped
 public class EducationService {
+
+    @Inject
+    private EducationMapper educationMapper;
     @Inject private PersonEducationRepository education;
     @Inject private EducationLevelRepository levels;
     @Inject private EducationalInstitutionRepository institutions;
@@ -23,7 +27,7 @@ public class EducationService {
 
     public List<PersonEducationDto> findByPerson(Long personId) {
         requirePerson(personId);
-        return education.findByPerson(personId).stream().map(PersonEducationDto::from).toList();
+        return education.findByPerson(personId).stream().map(educationMapper::toPersonEducationDto).toList();
     }
 
     public List<PersonEducationDto> findFor(Long accountId) {
@@ -50,8 +54,8 @@ public class EducationService {
     public PersonEducationDto add(Long personId, EducationRequest request) {
         Person person = requirePerson(personId);
         Resolved resolved = resolve(request);
-        return PersonEducationDto.from(education.save(new PersonEducation(person, resolved.level(),
-                resolved.institution(), resolved.field(), request.fromDate(), request.uptoDate())));
+        return educationMapper.toPersonEducationDto(education.save(educationMapper.toEntity(request, person, resolved.level(),
+                resolved.institution(), resolved.field())));
     }
 
     @Transactional
@@ -60,7 +64,7 @@ public class EducationService {
         Resolved resolved = resolve(request);
         existing.revise(resolved.level(), resolved.institution(), resolved.field(),
                 request.fromDate(), request.uptoDate());
-        return PersonEducationDto.from(education.save(existing));
+        return educationMapper.toPersonEducationDto(education.save(existing));
     }
 
     @Transactional
@@ -69,7 +73,7 @@ public class EducationService {
     }
 
     public PersonEducationDto findById(Long personId, Long id) {
-        return PersonEducationDto.from(requireOwned(personId, id));
+        return educationMapper.toPersonEducationDto(requireOwned(personId, id));
     }
 
     public PersonEducationDto findByIdFor(Long accountId, Long id) {

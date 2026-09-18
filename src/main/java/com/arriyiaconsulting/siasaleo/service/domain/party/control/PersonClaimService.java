@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.party.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.party.mapping.PersonMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ClaimDecision;
 import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ClaimResult;
 import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ClaimablePersonDto;
@@ -40,6 +41,9 @@ import java.util.Optional;
 public class PersonClaimService {
 
     @Inject
+    private PersonMapper personMapper;
+
+    @Inject
     private PersonClaimRepository claims;
 
     @Inject
@@ -78,10 +82,10 @@ public class PersonClaimService {
             open = findOpenByPerson(personId);
         }
         if (open.isPresent()) {
-            return new ClaimResult.ClaimAlreadyOpen(PersonClaimDto.from(open.get()));
+            return new ClaimResult.ClaimAlreadyOpen(personMapper.toPersonClaimDto(open.get()));
         }
 
-        return new ClaimResult.Submitted(PersonClaimDto.from(
+        return new ClaimResult.Submitted(personMapper.toPersonClaimDto(
                 claims.save(new PersonClaim(accountId, person.get(), evidence))));
     }
 
@@ -97,7 +101,7 @@ public class PersonClaimService {
         }
         PersonClaim claim = found.get();
         if (!claim.isPending()) {
-            return new ClaimDecision.AlreadyDecided(PersonClaimDto.from(claim));
+            return new ClaimDecision.AlreadyDecided(personMapper.toPersonClaimDto(claim));
         }
 
         Long personId = claim.getPerson().getId();
@@ -115,7 +119,7 @@ public class PersonClaimService {
         accounts.save(claimant);
 
         claim.approve(reviewerAccountId, note);
-        return new ClaimDecision.Decided(PersonClaimDto.from(claims.save(claim)));
+        return new ClaimDecision.Decided(personMapper.toPersonClaimDto(claims.save(claim)));
     }
 
     @Transactional
@@ -136,14 +140,14 @@ public class PersonClaimService {
     /** The review queue, oldest first. */
     public List<PersonClaimDto> findPending(int page, int size) {
         return claims.findByStatus(PersonClaimStatus.PENDING, pageRequest(page, size)).stream()
-                .map(PersonClaimDto::from)
+                .map(personMapper::toPersonClaimDto)
                 .toList();
     }
 
     /** Every claim an account has filed, newest first. */
     public List<PersonClaimDto> findByAccount(Long accountId) {
         return claims.findByAccount(accountId).stream()
-                .map(PersonClaimDto::from)
+                .map(personMapper::toPersonClaimDto)
                 .toList();
     }
 
@@ -155,7 +159,7 @@ public class PersonClaimService {
         String pattern = "%" + name.strip().toLowerCase() + "%";
         return persons.searchByName(pattern, pageRequest(page, size)).stream()
                 .filter(person -> accounts.findByPersonId(person.getId()).isEmpty())
-                .map(ClaimablePersonDto::from)
+                .map(personMapper::toClaimablePersonDto)
                 .toList();
     }
 
@@ -166,10 +170,10 @@ public class PersonClaimService {
         }
         PersonClaim claim = found.get();
         if (!claim.isPending()) {
-            return new ClaimDecision.AlreadyDecided(PersonClaimDto.from(claim));
+            return new ClaimDecision.AlreadyDecided(personMapper.toPersonClaimDto(claim));
         }
         outcome.accept(claim);
-        return new ClaimDecision.Decided(PersonClaimDto.from(claims.save(claim)));
+        return new ClaimDecision.Decided(personMapper.toPersonClaimDto(claims.save(claim)));
     }
 
     private Optional<PersonClaim> findOpenByAccount(Long accountId) {

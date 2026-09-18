@@ -1,6 +1,5 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto;
 
-import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
 import java.time.LocalDate;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -22,11 +21,4 @@ public record PoliticalPartyDto(
         @Schema(required = true, nullable = true) String postalAddress,
         @Schema(required = true, nullable = true) String headOfficeLocation,
         @Schema(required = true, nullable = true) String changes) {
-
-    public static PoliticalPartyDto from(PoliticalParty party) {
-        return new PoliticalPartyDto(party.getId(), party.getName(),
-                party.getAbbreviation(), party.getRegistrationNumber(),
-                party.getRegisteredOn(), party.getPostalAddress(),
-                party.getHeadOfficeLocation(), party.getChanges());
-    }
 }

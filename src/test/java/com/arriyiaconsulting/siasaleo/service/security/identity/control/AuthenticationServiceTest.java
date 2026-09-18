@@ -1,5 +1,8 @@
 package com.arriyiaconsulting.siasaleo.service.security.identity.control;
 
+import org.mapstruct.factory.Mappers;
+import org.mockito.Spy;
+import com.arriyiaconsulting.siasaleo.service.security.identity.mapping.IdentityMapper;
 import com.arriyiaconsulting.siasaleo.service.security.authorization.control.RoleAssignments;
 import com.arriyiaconsulting.siasaleo.service.security.authorization.entity.SecurityRole;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.LoginRequest;
@@ -34,6 +37,10 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class AuthenticationServiceTest {
+
+    @Spy
+    private IdentityMapper identityMapper = Mappers.getMapper(IdentityMapper.class);
+
 
     private static final String EMAIL = "jane@example.com";
 

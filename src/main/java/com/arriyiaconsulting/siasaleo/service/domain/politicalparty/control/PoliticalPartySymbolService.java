@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.mapping.PoliticalPartyMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.AdoptSymbolRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartySymbolDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
@@ -34,6 +35,9 @@ import java.util.Optional;
 public class PoliticalPartySymbolService {
 
     @Inject
+    private PoliticalPartyMapper politicalPartyMapper;
+
+    @Inject
     private PoliticalPartySymbolRepository symbols;
 
     @Inject
@@ -63,21 +67,20 @@ public class PoliticalPartySymbolService {
             entityManager.flush();
         }
 
-        return PoliticalPartySymbolDto.from(symbols.save(new PoliticalPartySymbol(
-                party, request.symbolDescription().trim(), request.imageFile(), fromDate)));
+        return politicalPartyMapper.toPoliticalPartySymbolDto(symbols.save(politicalPartyMapper.toSymbol(request, party, fromDate)));
     }
 
     /** The symbol on the ballot, absent for a party the register gave none. */
     public Optional<PoliticalPartySymbolDto> findCurrent(Long partyId) {
         requireParty(partyId);
-        return symbols.findCurrentByParty(partyId).map(PoliticalPartySymbolDto::from);
+        return symbols.findCurrentByParty(partyId).map(politicalPartyMapper::toPoliticalPartySymbolDto);
     }
 
     /** Every symbol the party has used, the most recent first. */
     public List<PoliticalPartySymbolDto> findHistory(Long partyId) {
         requireParty(partyId);
         return symbols.findByParty(partyId).stream()
-                .map(PoliticalPartySymbolDto::from)
+                .map(politicalPartyMapper::toPoliticalPartySymbolDto)
                 .toList();
     }
 

@@ -1,8 +1,5 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto;
 
-import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
-import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PartyMembership;
-import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
 import java.time.LocalDate;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -21,14 +18,4 @@ public record PartyMembershipDto(
         // Null while the membership is current.
         @Schema(required = true, nullable = true) LocalDate endDate,
         @Schema(required = true) boolean current) {
-
-    public static PartyMembershipDto from(PartyMembership membership) {
-        Person person = membership.getPerson();
-        PoliticalParty party = membership.getPoliticalParty();
-        return new PartyMembershipDto(membership.getId(), person.getId(),
-                person.getFirstName(), person.getLastName(),
-                party.getId(), party.getName(), party.getAbbreviation(),
-                membership.getStartDate(), membership.getEndDate(),
-                membership.isCurrent());
-    }
 }

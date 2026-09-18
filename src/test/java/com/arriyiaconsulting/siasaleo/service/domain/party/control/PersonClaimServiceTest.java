@@ -1,8 +1,10 @@
 package com.arriyiaconsulting.siasaleo.service.domain.party.control;
 
+import org.mapstruct.factory.Mappers;
+import org.mockito.Spy;
+import com.arriyiaconsulting.siasaleo.service.domain.party.mapping.PersonMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ClaimDecision;
 import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ClaimResult;
-import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ClaimablePersonDto;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.PersonClaim;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.PersonClaimStatus;
@@ -41,6 +43,10 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class PersonClaimServiceTest {
+
+    @Spy
+    private PersonMapper personMapper = Mappers.getMapper(PersonMapper.class);
+
 
     private static final long ACCOUNT_ID = 3L;
     private static final long REVIEWER_ID = 1L;
@@ -249,7 +255,7 @@ class PersonClaimServiceTest {
         when(accounts.findByPersonId(11L)).thenReturn(Optional.empty());
         when(accounts.findByPersonId(12L)).thenReturn(Optional.of(mock(UserAccount.class)));
 
-        assertEquals(List.of(ClaimablePersonDto.from(free)),
+        assertEquals(List.of(personMapper.toClaimablePersonDto(free)),
                 service.searchClaimable("  Odhiambo ", 0, 20));
 
         ArgumentCaptor<String> pattern = ArgumentCaptor.forClass(String.class);

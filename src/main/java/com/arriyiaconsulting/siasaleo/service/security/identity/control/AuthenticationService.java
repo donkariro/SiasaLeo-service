@@ -1,9 +1,9 @@
 package com.arriyiaconsulting.siasaleo.service.security.identity.control;
 
+import com.arriyiaconsulting.siasaleo.service.security.identity.mapping.IdentityMapper;
 import com.arriyiaconsulting.siasaleo.service.security.authorization.control.RoleAssignments;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.LoginRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.LoginResult;
-import com.arriyiaconsulting.siasaleo.service.security.identity.dto.UserAccountDto;
 import com.arriyiaconsulting.siasaleo.service.security.identity.entity.Identifier;
 import com.arriyiaconsulting.siasaleo.service.security.identity.entity.UserAccount;
 import com.arriyiaconsulting.siasaleo.service.security.identity.repository.UserAccountRepository;
@@ -23,6 +23,9 @@ import java.util.Optional;
  */
 @ApplicationScoped
 public class AuthenticationService {
+
+    @Inject
+    private IdentityMapper identityMapper;
 
     static final int MAX_FAILED_LOGINS = 5;
     static final Duration LOCK_DURATION = Duration.ofMinutes(15);
@@ -79,7 +82,7 @@ public class AuthenticationService {
                 TokenIssuer.IssuedToken issued =
                         tokens.issue(saved, roleAssignments.rolesOf(saved.getId()));
                 yield new LoginResult.Success(
-                        UserAccountDto.from(saved), issued.token(), issued.expiresAt());
+                        identityMapper.toUserAccountDto(saved), issued.token(), issued.expiresAt());
             }
         };
     }

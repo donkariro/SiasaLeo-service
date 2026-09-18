@@ -1,5 +1,8 @@
 package com.arriyiaconsulting.siasaleo.service.domain.candidate.control;
 
+import org.mapstruct.factory.Mappers;
+import com.arriyiaconsulting.siasaleo.service.domain.party.mapping.PersonMapper;
+import com.arriyiaconsulting.siasaleo.service.domain.candidate.mapping.CandidacyMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.*;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.entity.*;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.repository.*;
@@ -25,6 +28,13 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CandidacyServiceTest {
+
+    @Spy
+    private CandidacyMapper candidacyMapper = Mappers.getMapper(CandidacyMapper.class);
+
+    @Spy
+    private PersonMapper personMapper = Mappers.getMapper(PersonMapper.class);
+
     @Mock CandidacyRepository candidacies;
     @Mock CandidacyStatusRepository statuses;
     @Mock PersonRepository persons;

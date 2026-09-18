@@ -1,5 +1,8 @@
 package com.arriyiaconsulting.siasaleo.service.domain.party.control;
 
+import org.mapstruct.factory.Mappers;
+import org.mockito.Spy;
+import com.arriyiaconsulting.siasaleo.service.domain.party.mapping.PersonMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.party.dto.ProfileDetails;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Gender;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
@@ -34,6 +37,10 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class PersonProfileServiceTest {
+
+    @Spy
+    private PersonMapper personMapper = Mappers.getMapper(PersonMapper.class);
+
 
     private static final long ACCOUNT_ID = 3L;
     private static final long PERSON_ID = 11L;

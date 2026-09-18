@@ -1,7 +1,7 @@
 package com.arriyiaconsulting.siasaleo.service.domain.election.control;
 
+import com.arriyiaconsulting.siasaleo.service.domain.election.mapping.ElectionMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.election.dto.*;
-import com.arriyiaconsulting.siasaleo.service.domain.election.entity.Contest;
 import com.arriyiaconsulting.siasaleo.service.domain.election.repository.*;
 import com.arriyiaconsulting.siasaleo.service.domain.office.repository.SeatRepository;
 import jakarta.data.page.PageRequest;
@@ -13,12 +13,15 @@ import java.util.Optional;
 
 @ApplicationScoped
 public class ContestService {
+
+    @Inject
+    private ElectionMapper electionMapper;
     @Inject private ContestRepository contests;
     @Inject private ElectionEventRepository events;
     @Inject private SeatRepository seats;
 
     public Optional<ContestDto> findById(Long id) {
-        return contests.findById(id).map(ContestDto::from);
+        return contests.findById(id).map(electionMapper::toContestDto);
     }
 
     public List<ContestDto> findByEvent(Long eventId, Long seatId, int page, int size) {
@@ -28,7 +31,7 @@ public class ContestService {
         if (seatId != null) {
             seats.findById(seatId).orElseThrow(() -> new IllegalArgumentException("Seat not found: " + seatId));
         }
-        return contests.search(eventId, seatId, paging).stream().map(ContestDto::from).toList();
+        return contests.search(eventId, seatId, paging).stream().map(electionMapper::toContestDto).toList();
     }
 
     @Transactional
@@ -49,6 +52,6 @@ public class ContestService {
         }
         String description = request.description() == null || request.description().isBlank()
                 ? null : request.description().trim();
-        return ContestDto.from(contests.save(new Contest(request.electionEventId(), request.seatId(), description)));
+        return electionMapper.toContestDto(contests.save(electionMapper.toEntity(request, description)));
     }
 }

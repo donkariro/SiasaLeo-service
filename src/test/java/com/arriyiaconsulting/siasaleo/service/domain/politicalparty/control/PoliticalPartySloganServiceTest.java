@@ -1,5 +1,8 @@
 package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control;
 
+import org.mapstruct.factory.Mappers;
+import org.mockito.Spy;
+import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.mapping.PoliticalPartyMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.AdoptSloganRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartySloganDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.entity.PoliticalParty;
@@ -37,6 +40,10 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class PoliticalPartySloganServiceTest {
+
+    @Spy
+    private PoliticalPartyMapper politicalPartyMapper = Mappers.getMapper(PoliticalPartyMapper.class);
+
 
     private static final long PARTY_ID = 3L;
     private static final long SLOGAN_ID = 21L;

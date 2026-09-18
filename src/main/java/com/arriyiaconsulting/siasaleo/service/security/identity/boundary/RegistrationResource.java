@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.security.identity.boundary;
 
+import com.arriyiaconsulting.siasaleo.service.security.identity.mapping.IdentityMapper;
 import com.arriyiaconsulting.siasaleo.service.security.identity.control.RegistrationService;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.RegisterRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.RegistrationResult;
@@ -41,6 +42,9 @@ import java.util.Map;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class RegistrationResource {
+
+    @Inject
+    private IdentityMapper identityMapper;
 
     @Inject
     private RegistrationService service;
@@ -104,7 +108,7 @@ public class RegistrationResource {
     @GET
     @Path("accounts/{id}")
     public UserAccountDto account(@PathParam("id") Long id) {
-        return accounts.findById(id).map(UserAccountDto::from)
+        return accounts.findById(id).map(identityMapper::toUserAccountDto)
                 .orElseThrow(NotFoundException::new);
     }
 
