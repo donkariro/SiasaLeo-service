@@ -3,6 +3,7 @@ package com.arriyiaconsulting.siasaleo.service.domain.politicalparty.boundary;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control.PartyMembershipService;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.JoinPartyRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PartyMembershipDto;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -57,6 +58,7 @@ public class PartyMembershipResource {
     }
 
     @POST
+    @RolesAllowed("ADMINISTRATOR")
     public Response join(@Valid JoinPartyRequest request, @Context UriInfo uriInfo) {
         PartyMembershipDto created = service.join(request);
         return Response.created(uriInfo.getAbsolutePathBuilder()

@@ -20,6 +20,7 @@ public class ElectionService {
     @Inject private ElectionTypeRepository types;
     @Inject private ElectionStatusRepository statuses;
     @Inject private ElectionEventRepository events;
+    @Inject private com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.repository.GeographySnapshotRepository geography;
 
     public List<ElectionCycleDto> cycles() {
         return cycles.findAllOrdered().stream().map(electionMapper::toElectionCycleDto).toList();
@@ -62,10 +63,35 @@ public class ElectionService {
                     + "(fromYear inclusive, uptoYear exclusive)");
         }
         ElectionType type = requireType(request.typeId());
-        ElectionStatus scheduled = statuses.findByStatusName("SCHEDULED")
-                .orElseThrow(() -> new IllegalStateException("Election status SCHEDULED is not seeded"));
-        return electionMapper.toElectionEventDto(events.save(
-                electionMapper.toEntity(request, cycle, type, scheduled)));
+        ElectionStatus initial = request.statusId() == null
+                ? statuses.findByStatusName(ElectionStatusName.SCHEDULED.name()).orElseThrow(() -> new IllegalStateException("Election status SCHEDULED is not seeded"))
+                : requireStatus(request.statusId());
+        if (request.statusId() != null && (request.sourceReference() == null || request.sourceReference().isBlank()))
+            throw new IllegalArgumentException("Recording a supplied election status requires its source reference");
+        if (request.sourceReference() != null && (request.sourceReference().isBlank() || request.sourceReference().length()>2048))
+            throw new IllegalArgumentException("Source reference must be nonblank and at most 2048 characters");
+        ElectionEvent event = electionMapper.toEntity(request, cycle, type, initial);
+        if (request.geographySnapshotId() != null) {
+            requirePublishedGeography(request.geographySnapshotId());
+            event.assignGeography(request.geographySnapshotId());
+        }
+        event.recordSource(request.sourceReference());
+        return electionMapper.toElectionEventDto(events.save(event));
+    }
+
+    @Transactional
+    public Optional<ElectionEventDto> assignGeography(Long id, Long snapshotId) {
+        requirePublishedGeography(snapshotId);
+        return events.findById(id).map(event -> {
+            event.assignGeography(snapshotId);
+            return electionMapper.toElectionEventDto(events.save(event));
+        });
+    }
+
+    private void requirePublishedGeography(Long id) {
+        if (id == null || geography.find(id).filter(s -> s.getStatus() ==
+                com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.entity.SnapshotStatus.PUBLISHED).isEmpty())
+            throw new IllegalArgumentException("Published election geography is required");
     }
 
     @Transactional
@@ -74,21 +100,8 @@ public class ElectionService {
             throw new IllegalArgumentException("Election status is required");
         }
         return events.findById(id).map(event -> {
-            ElectionStatus next = requireStatus(request.statusId());
-            String current = event.getStatus().getStatusName();
-            String target = next.getStatusName();
-            if (current.equals(target)) return electionMapper.toElectionEventDto(event);
-            boolean allowed = switch (current) {
-                case "SCHEDULED" -> target.equals("ONGOING") || target.equals("CANCELLED");
-                case "ONGOING" -> target.equals("COMPLETED") || target.equals("NULLIFIED");
-                case "COMPLETED" -> target.equals("NULLIFIED");
-                default -> false;
-            };
-            if (!allowed) {
-                throw new IllegalArgumentException("Cannot change election status from " + current + " to " + target);
-            }
-            event.setStatus(next);
-            return electionMapper.toElectionEventDto(events.save(event));
+            boolean changed = event.changeStatus(requireStatus(request.statusId()));
+            return electionMapper.toElectionEventDto(changed ? events.save(event) : event);
         });
     }
 

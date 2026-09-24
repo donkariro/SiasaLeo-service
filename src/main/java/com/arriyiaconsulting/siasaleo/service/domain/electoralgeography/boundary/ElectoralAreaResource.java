@@ -3,6 +3,7 @@ package com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.boundar
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.control.ElectoralAreaService;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.dto.CreateElectoralAreaRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.dto.ElectoralAreaDto;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -67,6 +68,7 @@ public class ElectoralAreaResource {
     }
 
     @POST
+    @RolesAllowed("ADMINISTRATOR")
     public Response create(@Valid CreateElectoralAreaRequest request, @Context UriInfo uriInfo) {
         ElectoralAreaDto created = service.create(request);
         return Response.created(uriInfo.getAbsolutePathBuilder()

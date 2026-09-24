@@ -4,6 +4,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control.Part
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.DefectToPartyRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PartyMembershipDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.ResignMembershipRequest;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -47,6 +48,7 @@ public class PartyMemberResource {
     }
 
     @POST
+    @RolesAllowed("ADMINISTRATOR")
     @Path("defection")
     public PartyMembershipDto defect(@PathParam("personId") Long personId,
                                      @Valid DefectToPartyRequest request) {
@@ -56,6 +58,7 @@ public class PartyMemberResource {
     // The body only carries an optional date, so an empty request means
     // "resigned today".
     @POST
+    @RolesAllowed("ADMINISTRATOR")
     @Path("resignation")
     public PartyMembershipDto resign(@PathParam("personId") Long personId,
                                      @Valid ResignMembershipRequest request) {

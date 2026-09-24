@@ -8,5 +8,6 @@ public record ElectionEventDto(
         @Schema(required = true) Long electionCycleId,
         @Schema(required = true) LocalDate electionDate,
         @Schema(required = true) ElectionTypeDto type,
-        @Schema(required = true) ElectionStatusDto status) {
+        @Schema(required = true) ElectionStatusDto status,
+        Long geographySnapshotId, String sourceReference) {
 }

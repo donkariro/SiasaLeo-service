@@ -12,6 +12,9 @@ import java.util.Optional;
 @Repository
 public interface CandidacyRepository extends BasicRepository<Candidacy, Long> {
 
+    @Query("FROM Candidacy WHERE contest.id = :contestId AND sourceReference = :source AND sourceRecordReference = :record")
+    Optional<Candidacy> findBySource(@Param("contestId") Long contestId, @Param("source") String source, @Param("record") String record);
+
     @Query("FROM Candidacy WHERE person.id = :personId AND contest.id = :contestId")
     Optional<Candidacy> findByPersonAndContest(@Param("personId") Long personId,
                                                @Param("contestId") Long contestId);

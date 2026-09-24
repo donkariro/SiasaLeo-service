@@ -1,5 +1,10 @@
 # Election domain API
 
+Election capture, official register editions and result publications are described
+in [election records](election-records.md). The same APIs and storage serve every
+election. Contests can reference an office and snapshot jurisdiction without an
+operational `seatId`.
+
 All paths are relative to the application's REST base path. Reads are public;
 event creation, status changes, and contest creation require an authenticated
 account with the `ADMINISTRATOR` role.
@@ -43,9 +48,14 @@ from the server clock.
 
 Use IDs returned by the catalog endpoints. The date must fall within the cycle's
 years: `fromYear` is inclusive and `uptoYear` is exclusive. Dates in the past are
-accepted to support historical records. Every new event starts at `SCHEDULED`.
+accepted. A new event defaults to `SCHEDULED`. Administrators may supply `statusId`
+and a `sourceReference` to capture an event's documented status directly. Optional
+`geographySnapshotId` binds published geography at creation; it can also be assigned
+with `PUT /election-events/{id}/geography` before recording results or a register
+assignment. These options do not depend on whether the date is past or future.
 The response is `201 Created`, with a Location header and an event DTO containing
-`id`, `electionCycleId`, `electionDate`, and nested `type` and `status` catalog DTOs.
+`id`, `electionCycleId`, `electionDate`, nested `type` and `status` catalog DTOs,
+`geographySnapshotId`, and `sourceReference`.
 
 ## Change event status
 
@@ -81,12 +91,17 @@ results, officeholders, or a replacement election event.
 }
 ```
 
-The event and seat must exist. Description is optional, limited to 255 characters,
+The event and supplied seat must exist. Alternatively, supply `officeId` and
+`jurisdictionId` from the event's published geography and omit `seatId`. A supplied
+seat alongside a jurisdiction requires a reviewed correspondence and the same office.
+Existing seat-based contests can be bound with `PUT /contests/{id}/jurisdiction`.
+Description is optional, limited to 255 characters,
 trimmed, and normalized to null when blank. Only one contest is allowed for an
 event/seat pair; the database constraint also protects concurrent inserts.
 Historical contests can be entered regardless of event status.
 The response is `201 Created`, with a Location header and
-`{id, electionEventId, seatId, description}`. The returned contest ID can be used
+`{id, electionEventId, seatId, description, officeId, geographySnapshotId, jurisdictionId}`.
+The returned contest ID can be used
 with the existing candidacy registration endpoint.
 
 ## Errors and deployment

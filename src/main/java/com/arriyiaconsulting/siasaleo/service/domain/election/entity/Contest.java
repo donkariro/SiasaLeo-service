@@ -21,8 +21,28 @@ public class Contest {
     @Column(name = "election_event_id", nullable = false, updatable = false)
     private Long electionEventId;
 
-    @Column(name = "seat_id", nullable = false, updatable = false)
+    @Column(name = "seat_id", updatable = false)
     private Long seatId;
+
+    @Column(name = "office_id")
+    private Long officeId;
+    @Column(name = "geography_snapshot_id")
+    private Long geographySnapshotId;
+    @Column(name = "jurisdiction_id")
+    private Long jurisdictionId;
+
+    public Long getOfficeId() { return officeId; }
+    public Long getGeographySnapshotId() { return geographySnapshotId; }
+    public Long getJurisdictionId() { return jurisdictionId; }
+
+    public void assignJurisdiction(Long office, Long snapshot, Long area) {
+        if (officeId != null && !officeId.equals(office)) throw new IllegalArgumentException("Contest office must be preserved");
+        if (jurisdictionId != null && (!jurisdictionId.equals(area) || !officeId.equals(office) || !geographySnapshotId.equals(snapshot)))
+            throw new IllegalArgumentException("Contest jurisdiction is already fixed");
+        officeId=office;
+        geographySnapshotId=snapshot;
+        jurisdictionId=area;
+    }
 
     @Column(length = 255)
     private String description;

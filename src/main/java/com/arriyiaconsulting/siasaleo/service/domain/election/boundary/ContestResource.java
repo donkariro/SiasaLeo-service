@@ -44,4 +44,9 @@ public class ContestResource {
         return Response.created(uriInfo.getAbsolutePathBuilder().path(created.id().toString()).build())
                 .entity(created).build();
     }
+
+    @PUT @Path("{id}/jurisdiction") @RolesAllowed("ADMINISTRATOR")
+    public ContestDto assignJurisdiction(@PathParam("id") Long id, @NotNull @Valid AssignJurisdictionRequest request) {
+        return service.assignJurisdiction(id,request.officeId(),request.jurisdictionId()).orElseThrow(NotFoundException::new);
+    }
 }

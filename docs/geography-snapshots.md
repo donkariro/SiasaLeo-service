@@ -89,12 +89,11 @@ The schema migrations are applied by the existing Flyway startup mechanism.
 After deployment, an administrator can inspect the draft, establish the source,
 correct its metadata/nodes and publish it. There is no automatic publication.
 
-This change implements the geography foundation. Historical voter-register
-counts, election-register assignments, contest jurisdiction snapshots and
-station-result revisions are separate follow-on domain changes. When added,
-their foreign keys must target historical snapshot nodes (and verify matching
-snapshots), not resolve history through operational `electoral_area` rows.
-Do not reassign existing result records by station-code matching alone.
+V45 connects this foundation to core voter-register editions, election-register
+assignments, contest jurisdictions and result publications, for elections of any date.
+See [election records](election-records.md) for their capture and import workflow.
+Their references target historical snapshot nodes and enforce matching snapshots.
+Existing result records are not reassigned by station-code matching.
 
 The source reference/checksum is stored directly on the snapshot because there
 is currently no shared source-document entity. It can later be replaced with a

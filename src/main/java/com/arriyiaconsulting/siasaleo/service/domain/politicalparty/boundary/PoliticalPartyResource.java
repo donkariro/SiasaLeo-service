@@ -13,6 +13,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.Politica
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartySymbolDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.ReplaceColorsRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.RetireSloganRequest;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -96,6 +97,7 @@ public class PoliticalPartyResource {
     // Adopting a symbol replaces the one in use, so this posts to the
     // succession rather than putting to the singular sub-resource.
     @POST
+    @RolesAllowed("ADMINISTRATOR")
     @Path("{id}/symbols")
     public Response adoptSymbol(@PathParam("id") Long id,
                                 @Valid AdoptSymbolRequest request,
@@ -116,6 +118,7 @@ public class PoliticalPartyResource {
     // PUT, not POST: colours carry no validity period and are replaced
     // wholesale, so this is idempotent.
     @PUT
+    @RolesAllowed("ADMINISTRATOR")
     @Path("{id}/colors")
     public PoliticalPartyColorsDto replaceColors(@PathParam("id") Long id,
                                                  @Valid ReplaceColorsRequest request) {
@@ -133,6 +136,7 @@ public class PoliticalPartyResource {
     }
 
     @POST
+    @RolesAllowed("ADMINISTRATOR")
     @Path("{id}/slogans")
     public Response adoptSlogan(@PathParam("id") Long id,
                                 @Valid AdoptSloganRequest request,
@@ -147,6 +151,7 @@ public class PoliticalPartyResource {
     // The body only carries an optional date, so an empty request retires the
     // slogan today.
     @POST
+    @RolesAllowed("ADMINISTRATOR")
     @Path("{id}/slogans/{sloganId}/retirement")
     public PoliticalPartySloganDto retireSlogan(@PathParam("id") Long id,
                                                 @PathParam("sloganId") Long sloganId,

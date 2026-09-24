@@ -4,6 +4,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.control.Poli
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.AppointOfficialRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.PoliticalPartyOfficialDto;
 import com.arriyiaconsulting.siasaleo.service.domain.politicalparty.dto.StepDownOfficialRequest;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -68,6 +69,7 @@ public class PoliticalPartyOfficialResource {
     }
 
     @POST
+    @RolesAllowed("ADMINISTRATOR")
     public Response appoint(@Valid AppointOfficialRequest request, @Context UriInfo uriInfo) {
         PoliticalPartyOfficialDto created = service.appoint(request);
         return Response.created(uriInfo.getAbsolutePathBuilder()
@@ -79,6 +81,7 @@ public class PoliticalPartyOfficialResource {
     // The body only carries an optional date, so an empty request means the
     // official stood down today.
     @POST
+    @RolesAllowed("ADMINISTRATOR")
     @Path("{id}/step-down")
     public PoliticalPartyOfficialDto stepDown(@PathParam("id") Long id,
                                               @Valid StepDownOfficialRequest request) {

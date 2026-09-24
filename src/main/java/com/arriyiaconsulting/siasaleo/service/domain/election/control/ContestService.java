@@ -19,6 +19,7 @@ public class ContestService {
     @Inject private ContestRepository contests;
     @Inject private ElectionEventRepository events;
     @Inject private SeatRepository seats;
+    @Inject private ContestJurisdictionService jurisdictions;
 
     public Optional<ContestDto> findById(Long id) {
         return contests.findById(id).map(electionMapper::toContestDto);
@@ -36,22 +37,36 @@ public class ContestService {
 
     @Transactional
     public ContestDto create(CreateContestRequest request) {
-        if (request == null || request.electionEventId() == null || request.seatId() == null) {
-            throw new IllegalArgumentException("Election event and seat are required");
+        if (request == null || request.electionEventId() == null ||
+                (request.seatId() == null && (request.officeId() == null || request.jurisdictionId() == null))) {
+            throw new IllegalArgumentException("Election event and either a seat or office/jurisdiction are required");
         }
         if (request.description() != null && request.description().length() > 255) {
             throw new IllegalArgumentException("Description must not exceed 255 characters");
         }
-        events.findById(request.electionEventId())
+        var event = events.findById(request.electionEventId())
                 .orElseThrow(() -> new IllegalArgumentException("Election event not found: " + request.electionEventId()));
-        seats.findById(request.seatId())
+        if (request.seatId() != null) seats.findById(request.seatId())
                 .orElseThrow(() -> new IllegalArgumentException("Seat not found: " + request.seatId()));
         // V8's unique constraint also protects concurrent inserts.
-        if (contests.findByEventAndSeat(request.electionEventId(), request.seatId()).isPresent()) {
+        if (request.seatId() != null && contests.findByEventAndSeat(request.electionEventId(), request.seatId()).isPresent()) {
             throw new IllegalArgumentException("A contest already exists for this election event and seat");
         }
         String description = request.description() == null || request.description().isBlank()
                 ? null : request.description().trim();
-        return electionMapper.toContestDto(contests.save(electionMapper.toEntity(request, description)));
+        var contest = electionMapper.toEntity(request, description);
+        if (request.jurisdictionId() != null || request.officeId() != null) {
+            jurisdictions.assign(contest, event, request.officeId(), request.jurisdictionId());
+        }
+        return electionMapper.toContestDto(contests.save(contest));
+    }
+
+    @Transactional
+    public Optional<ContestDto> assignJurisdiction(Long id, Long office, Long area) {
+        return contests.findById(id).map(contest -> {
+            var event = events.findById(contest.getElectionEventId()).orElseThrow();
+            jurisdictions.assign(contest, event, office, area);
+            return electionMapper.toContestDto(contests.save(contest));
+        });
     }
 }

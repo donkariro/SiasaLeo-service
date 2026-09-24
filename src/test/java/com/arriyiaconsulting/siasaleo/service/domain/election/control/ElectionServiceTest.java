@@ -21,6 +21,36 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ElectionServiceTest {
 
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {2013, 2022, 2027})
+    void electionAgeDoesNotChooseASeparateCreationModel(int year) {
+        ElectionCycle cycle = mock(ElectionCycle.class);
+        when(cycle.getFromYear()).thenReturn(year);
+        when(cycle.getUptoYear()).thenReturn(year + 5);
+        when(cycles.findById(1L)).thenReturn(Optional.of(cycle));
+        when(types.findById(1L)).thenReturn(Optional.of(mock(ElectionType.class)));
+        when(statuses.findByStatusName("SCHEDULED")).thenReturn(Optional.of(mock(ElectionStatus.class)));
+        when(events.save(any())).thenAnswer(i -> i.getArgument(0));
+        LocalDate date = LocalDate.of(year, 8, 9);
+        ElectionEventDto result = service.createEvent(new CreateElectionEventRequest(1L, date, 1L));
+        assertEquals(date, result.electionDate());
+        verify(events).save(any(ElectionEvent.class));
+    }
+
+    @Test
+    void importsDocumentedStatusThroughTheSameEventService() {
+        ElectionCycle cycle = cycle();
+        when(types.findById(1L)).thenReturn(Optional.of(mock(ElectionType.class)));
+        ElectionStatus completed = mock(ElectionStatus.class);
+        when(statuses.findById(3L)).thenReturn(Optional.of(completed));
+        when(events.save(any())).thenAnswer(i -> i.getArgument(0));
+        service.createEvent(new CreateElectionEventRequest(1L, LocalDate.of(2027,8,9),1L,null,3L,"official notice"));
+        ArgumentCaptor<ElectionEvent> saved = ArgumentCaptor.forClass(ElectionEvent.class);
+        verify(events).save(saved.capture());
+        assertSame(completed,saved.getValue().getStatus());
+        assertEquals("official notice",saved.getValue().getSourceReference());
+    }
+
     @Spy
     private ElectionMapper electionMapper = Mappers.getMapper(ElectionMapper.class);
 

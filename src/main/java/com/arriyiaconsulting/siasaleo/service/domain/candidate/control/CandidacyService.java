@@ -119,6 +119,43 @@ public class CandidacyService {
         return candidacies.findById(id).map(candidacyMapper::toCandidacyDto);
     }
 
+    @Transactional
+    public Optional<CandidacyDto> recordBallot(Long id, com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.RecordBallotRequest r) {
+        return candidacies.findById(id).map(c -> {
+            c.recordBallot(r.ballotName(),r.ballotPartyName(),r.sourceReference(),r.sourceRecordReference(),null);
+            return candidacyMapper.toCandidacyDto(candidacies.save(c));
+        });
+    }
+
+    /** Administrative capture for any election, without creating a user registration. */
+    @Transactional
+    public CandidacyDto importCandidacy(com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.ImportCandidacyRequest r) {
+        if(r==null || r.contestId()==null || r.statusId()==null || r.sourceReference()==null || r.sourceReference().isBlank()
+                || r.sourceRecordReference()==null || r.sourceRecordReference().isBlank()) throw new IllegalArgumentException("Contest, status and source record are required");
+        String fingerprint=com.arriyiaconsulting.siasaleo.service.infrastructure.shared.importing.ImportSupport.fingerprint(r);
+        Optional<Candidacy> existing=candidacies.findBySource(r.contestId(),r.sourceReference(),r.sourceRecordReference());
+        if(existing.isPresent()) {
+            if(!fingerprint.equals(existing.get().getImportFingerprint())) throw new IllegalArgumentException("Source record already has a different candidacy payload");
+            return candidacyMapper.toCandidacyDto(existing.get());
+        }
+        Contest contest=contests.findById(r.contestId()).orElseThrow(()->new IllegalArgumentException("Contest not found"));
+        CandidacyStatus status=statuses.findById(r.statusId()).orElseThrow(()->new IllegalArgumentException("Candidacy status not found"));
+        PoliticalParty party=r.politicalPartyId()==null ? null : politicalParties.findById(r.politicalPartyId()).orElseThrow(()->new IllegalArgumentException("Political party not found"));
+        Person person;
+        if(r.personId()!=null) {
+            if(r.profile()!=null) throw new IllegalArgumentException("Supply either an existing person ID or a new profile");
+            person=persons.findById(r.personId()).orElseThrow(()->new IllegalArgumentException("Person not found"));
+            if(candidacies.findByPersonAndContest(person.getId(),contest.getId()).isPresent()) throw new IllegalArgumentException("Person already has a candidacy in this contest");
+        } else {
+            ProfileDetails p=r.profile();
+            if(p==null || p.firstName()==null || p.firstName().isBlank() || p.lastName()==null || p.lastName().isBlank()) throw new IllegalArgumentException("A new person requires first and last names");
+            person=persons.save(new Person(p.firstName().trim(),p.lastName().trim(),p.dateOfBirth(),p.gender()));
+        }
+        Candidacy candidacy=new Candidacy(person,contest,party,status);
+        candidacy.recordBallot(r.ballotName(),r.ballotPartyName(),r.sourceReference(),r.sourceRecordReference(),fingerprint);
+        return candidacyMapper.toCandidacyDto(candidacies.save(candidacy));
+    }
+
     public List<CandidacyDto> findByContest(Long contestId, int page, int size) {
         contests.findById(contestId)
                 .orElseThrow(() -> new IllegalArgumentException(

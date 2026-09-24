@@ -86,4 +86,18 @@ public class CandidacyResource {
     private static int clamp(int size) {
         return Math.max(1, Math.min(size, MAX_PAGE_SIZE));
     }
+
+    @POST @Path("imports") @RolesAllowed("ADMINISTRATOR")
+    @APIResponse(responseCode="201", description="Candidacy captured", content=@Content(schema=@Schema(implementation=CandidacyDto.class)))
+    public Response importCandidacy(@NotNull @Valid com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.ImportCandidacyRequest request,
+            @Context UriInfo uri) {
+        CandidacyDto result=service.importCandidacy(request);
+        return Response.created(uri.getBaseUriBuilder().path("candidacies").path(result.id().toString()).build()).entity(result).build();
+    }
+
+    @jakarta.ws.rs.PUT @Path("{id}/ballot") @RolesAllowed("ADMINISTRATOR")
+    public CandidacyDto recordBallot(@PathParam("id") Long id,
+            @NotNull @Valid com.arriyiaconsulting.siasaleo.service.domain.candidate.dto.RecordBallotRequest request) {
+        return service.recordBallot(id,request).orElseThrow(NotFoundException::new);
+    }
 }

@@ -11,7 +11,6 @@ import jakarta.ws.rs.ext.Provider;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.StringJoiner;
 
 /**
  * Bean Validation failures (@Valid on request DTOs) would otherwise surface in
@@ -38,15 +37,23 @@ public class ConstraintViolationExceptionMapper
     }
 
     // The full path of a resource-method violation is e.g. "create.arg0.name";
-    // only the property nodes ("name") mean anything to the client.
-    private static String fieldOf(ConstraintViolation<?> violation) {
-        StringJoiner properties = new StringJoiner(".");
+    // only the property nodes ("name") mean anything to the client. List
+    // positions are kept ("votes[3].voteCount") so a bulk import says which
+    // row failed. A node inside a list carries the position of the element
+    // it sits in, so the index is written before the node's own name.
+    static String fieldOf(ConstraintViolation<?> violation) {
+        StringBuilder field = new StringBuilder();
         for (Path.Node node : violation.getPropertyPath()) {
-            if (node.getKind() == ElementKind.PROPERTY && node.getName() != null) {
-                properties.add(node.getName());
+            boolean property = node.getKind() == ElementKind.PROPERTY && node.getName() != null;
+            boolean element = node.getKind() == ElementKind.CONTAINER_ELEMENT;
+            if ((property || element) && field.length() > 0 && node.isInIterable() && node.getIndex() != null) {
+                field.append('[').append(node.getIndex()).append(']');
+            }
+            if (property) {
+                if (field.length() > 0) field.append('.');
+                field.append(node.getName());
             }
         }
-        String field = properties.toString();
-        return field.isEmpty() ? String.valueOf(violation.getPropertyPath()) : field;
+        return field.length() == 0 ? String.valueOf(violation.getPropertyPath()) : field.toString();
     }
 }

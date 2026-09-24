@@ -14,5 +14,6 @@ public record CandidacyDto(
         @Schema(required = true, nullable = true) Long politicalPartyId,
         @Schema(required = true, nullable = true) String partyName,
         @Schema(required = true, nullable = true) String partyAbbreviation,
-        @Schema(required = true) String status) {
+        @Schema(required = true) String status,
+        String ballotName, String ballotPartyName, String sourceReference, String sourceRecordReference) {
 }

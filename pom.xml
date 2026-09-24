@@ -24,6 +24,14 @@
             <version>1.0.1</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Also ahead of the platform jar, for the same reason: tests that
+             validate request DTOs run the real Bean Validation bootstrap. -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>3.1.1</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>jakarta.platform</groupId>
             <artifactId>jakarta.jakartaee-api</artifactId>
@@ -64,6 +72,14 @@
             <groupId>org.eclipse.parsson</groupId>
             <artifactId>parsson</artifactId>
             <version>1.1.7</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Bean Validation implementation for tests only; Payara provides
+             Hibernate Validator at runtime. -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>9.0.1.Final</version>
             <scope>test</scope>
         </dependency>
         <dependency>

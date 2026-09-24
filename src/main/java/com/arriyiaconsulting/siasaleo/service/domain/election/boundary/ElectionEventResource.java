@@ -51,4 +51,9 @@ public class ElectionEventResource {
             @NotNull @Valid ChangeElectionStatusRequest request) {
         return service.changeStatus(id, request).orElseThrow(NotFoundException::new);
     }
+
+    @PUT @Path("{id}/geography") @RolesAllowed("ADMINISTRATOR")
+    public ElectionEventDto assignGeography(@PathParam("id") Long id, @NotNull @Valid AssignGeographyRequest request) {
+        return service.assignGeography(id, request.geographySnapshotId()).orElseThrow(NotFoundException::new);
+    }
 }
