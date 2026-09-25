@@ -1,6 +1,6 @@
-package com.arriyiaconsulting.siasaleo.service.domain.result.boundary;
-import com.arriyiaconsulting.siasaleo.service.domain.result.control.*;
-import com.arriyiaconsulting.siasaleo.service.domain.result.dto.ResultDtos.*;
+package com.arriyiaconsulting.siasaleo.service.domain.election.result.boundary;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.control.*;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.dto.ResultDtos.*;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;

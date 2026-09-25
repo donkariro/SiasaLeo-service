@@ -1,7 +1,7 @@
-package com.arriyiaconsulting.siasaleo.service.domain.result.control;
-import com.arriyiaconsulting.siasaleo.service.domain.result.dto.ResultDtos.*;
-import com.arriyiaconsulting.siasaleo.service.domain.result.dto.ResultStage;
-import com.arriyiaconsulting.siasaleo.service.domain.result.repository.ResultRepository;
+package com.arriyiaconsulting.siasaleo.service.domain.election.result.control;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.dto.ResultDtos.*;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.dto.ResultStage;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.repository.ResultRepository;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.error.*;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.validation.TestValidation;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.importing.Coverage;

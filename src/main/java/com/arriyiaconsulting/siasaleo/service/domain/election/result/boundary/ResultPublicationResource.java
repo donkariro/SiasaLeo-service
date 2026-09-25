@@ -1,7 +1,7 @@
-package com.arriyiaconsulting.siasaleo.service.domain.result.boundary;
+package com.arriyiaconsulting.siasaleo.service.domain.election.result.boundary;
 
-import com.arriyiaconsulting.siasaleo.service.domain.result.control.*;
-import com.arriyiaconsulting.siasaleo.service.domain.result.dto.ResultDtos.*;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.control.*;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.dto.ResultDtos.*;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.importing.ImportSupport.ValidationReport;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;

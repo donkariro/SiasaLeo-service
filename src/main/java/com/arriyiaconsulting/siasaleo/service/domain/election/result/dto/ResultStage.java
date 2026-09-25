@@ -1,4 +1,4 @@
-package com.arriyiaconsulting.siasaleo.service.domain.result.dto;
+package com.arriyiaconsulting.siasaleo.service.domain.election.result.dto;
 
 import java.util.Arrays;
 import java.util.Optional;

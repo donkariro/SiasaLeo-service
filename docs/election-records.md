@@ -10,11 +10,14 @@ publication table shared between registers and results.
 
 | Domain | Records and behavior |
 | --- | --- |
-| `election` | Events, contest jurisdictions, and sourced register assignments |
+| `election` | Events, contest jurisdictions, sourced register assignments, and election results through the `election.result` feature |
 | `electoralgeography` | Published geographical editions with immutable nodes |
 | `candidate` | Core candidacies, administrative capture, and ballot names/affiliations |
 | `voter` | Official register editions, counts, validation and publication; existing personal declarations remain separate |
-| `result` | Result publications, candidate rosters, votes, ballots, summaries and revisions |
+| `election.result` | Result publications, candidate rosters, votes, ballots, summaries and revisions |
+
+Results belong to the election domain. The `election.result` feature keeps its
+own services, DTOs, repositories, and endpoints to manage its publication lifecycle.
 
 Only technical utilities—bound SQL execution, fingerprints, paging and error
 responses—are shared in infrastructure. Register and result services own separate

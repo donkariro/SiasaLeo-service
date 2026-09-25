@@ -1,8 +1,8 @@
-package com.arriyiaconsulting.siasaleo.service.domain.result.control;
+package com.arriyiaconsulting.siasaleo.service.domain.election.result.control;
 
-import com.arriyiaconsulting.siasaleo.service.domain.result.dto.ResultDtos.*;
-import com.arriyiaconsulting.siasaleo.service.domain.result.dto.ResultStage;
-import com.arriyiaconsulting.siasaleo.service.domain.result.repository.ResultRepository;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.dto.ResultDtos.*;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.dto.ResultStage;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.repository.ResultRepository;
 import java.math.BigDecimal;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.control.VoterRegisterService;
 import com.arriyiaconsulting.siasaleo.service.domain.voter.dto.VoterRegisterDtos.*;

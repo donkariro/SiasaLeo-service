@@ -1,7 +1,7 @@
-package com.arriyiaconsulting.siasaleo.service.domain.result.repository;
+package com.arriyiaconsulting.siasaleo.service.domain.election.result.repository;
 
-import com.arriyiaconsulting.siasaleo.service.domain.result.dto.ResultDtos.*;
-import com.arriyiaconsulting.siasaleo.service.domain.result.dto.ResultStage;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.dto.ResultDtos.*;
+import com.arriyiaconsulting.siasaleo.service.domain.election.result.dto.ResultStage;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.importing.Coverage;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.importing.PublicationStatus;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.persistence.NativeQueries;

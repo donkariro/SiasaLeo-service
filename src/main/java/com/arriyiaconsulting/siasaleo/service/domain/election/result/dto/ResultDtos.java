@@ -1,4 +1,4 @@
-package com.arriyiaconsulting.siasaleo.service.domain.result.dto;
+package com.arriyiaconsulting.siasaleo.service.domain.election.result.dto;
 import java.math.BigDecimal;
 import java.util.List;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.importing.ImportSupport.ValidationReport;
