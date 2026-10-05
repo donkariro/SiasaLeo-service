@@ -108,14 +108,16 @@ validation, hierarchy isolation and MapStruct mappings through the services.
 from live-area edits. Run it with stop-on-error enabled in a disposable PostgreSQL
 database after applying V2, V3, V43 and V44. It rolls its own changes back.
 
-An optional isolated runner uses PGlite (PostgreSQL compiled to WASM):
+An isolated runner uses PGlite (PostgreSQL compiled to WASM). `mvn test` runs it
+with a trimmed seed; to run it on its own, or against the complete seed:
 
 ```text
-npm install --prefix target/snapshot-db-test --no-save --package-lock=false @electric-sql/pglite@0.5.8
-node src/test/sql/run-geography-snapshots.mjs
+cd src/test/sql && npm ci
+node run-geography-snapshots.mjs
+node run-geography-snapshots.mjs --full
 ```
 
-The runner initializes an in-memory database, applies the actual 67,385-node seed
+The runner initializes an in-memory database, applies the seed (all 67,385 nodes with `--full`)
 and both new migrations, and executes the SQL checks. It does not access your
 application database. It validates SQL behavior but not concurrent connections
 or Payara/JPA deployment; those require a PostgreSQL/Payara integration environment.

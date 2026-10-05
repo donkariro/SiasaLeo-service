@@ -8,5 +8,6 @@ public record OfficeDto(
         @Schema(required = true) String name,
         @Schema(required = true) String abbreviation,
         @Schema(required = true, nullable = true) String description,
-        @Schema(required = true, enumeration = {"National", "County"}) String level) {
+        @Schema(required = true) String level,
+        @Schema(required = true, example = "KE") String countryCode) {
 }

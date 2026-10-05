@@ -211,10 +211,10 @@ They never sum legacy, provisional, official and corrected versions together.
 The officeholder mandate view is rebuilt against the selected official summary.
 
 ```text
-mvn test
-npm install --prefix target/snapshot-db-test --no-save --package-lock=false @electric-sql/pglite@0.5.8
-node src/test/sql/run-election-records.mjs
-node src/test/sql/run-election-records.mjs --full
+mvn test                                         # Java tests, then every PGlite suite
+cd src/test/sql && npm ci                        # or run the database checks on their own
+node run-election-records.mjs
+node run-election-records.mjs --full             # with the complete electoral area seed
 ```
 
 The isolated runner applies all migrations and tests legacy preservation,

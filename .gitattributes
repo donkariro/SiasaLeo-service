@@ -1,0 +1,20 @@
+# Store and check out text files with LF, whatever core.autocrlf says on the
+# machine, so diffs never show line-ending noise. Flyway checksums read
+# migrations line by line, so line endings do not affect them.
+* text=auto eol=lf
+
+# Windows-only scripts need CRLF to run under cmd.exe.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Never touch binary content.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.jar binary
+*.war binary
+*.zip binary
+*.gz binary

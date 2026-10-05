@@ -32,3 +32,6 @@ nbactions.xml
 # Environment / secrets
 .env
 *.local.properties
+
+# SQL test dependencies (installed by Maven / npm ci)
+src/test/sql/node_modules/

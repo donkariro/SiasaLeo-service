@@ -130,6 +130,51 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
             </plugin>
+            <!-- Database tests: applies every Flyway migration to an in-process
+                 PostgreSQL (PGlite) and checks the triggers, functions and
+                 constraints the Java unit tests mock away. Node is downloaded
+                 into target/ (cached in ~/.m2), so no local install is needed.
+                 Skipped by -DskipTests or -Dskip.npm; to run them on their
+                 own, use "npm test" (or "npm run test:full") in src/test/sql. -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>2.0.2</version>
+                <configuration>
+                    <workingDirectory>src/test/sql</workingDirectory>
+                    <installDirectory>${project.build.directory}</installDirectory>
+                    <nodeVersion>v22.15.0</nodeVersion>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-for-sql-tests</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>install-sql-test-dependencies</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>ci --no-audit --no-fund</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>sql-tests</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>test</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Emits target/generated/openapi.{yaml,json} at build time so clients can
                  generate their wire types without a running server (Payara also serves
                  the same document live at /openapi). -->

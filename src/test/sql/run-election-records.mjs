@@ -1,5 +1,5 @@
 // Isolated PostgreSQL/WASM checks; never connects to the application database.
-import { PGlite } from '../../../target/snapshot-db-test/node_modules/@electric-sql/pglite/dist/index.js';
+import { PGlite } from '@electric-sql/pglite';
 import { readFile, readdir } from 'node:fs/promises';
 
 const db = new PGlite();

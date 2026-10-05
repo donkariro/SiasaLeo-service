@@ -16,18 +16,20 @@ public class Office {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, unique = true, length = 10)
+    @Column(nullable = false, length = 10)
     private String abbreviation;
 
     @Column(length = 255)
     private String description;
 
-    // Matches the database values "National" and "County".
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 100)
     private String level;
+
+    @Column(name = "country_code", nullable = false, length = 2)
+    private String countryCode = "KE";
 
     protected Office() {
     }
@@ -37,4 +39,5 @@ public class Office {
     public String getAbbreviation() { return abbreviation; }
     public String getDescription() { return description; }
     public String getLevel() { return level; }
+    public String getCountryCode() { return countryCode; }
 }

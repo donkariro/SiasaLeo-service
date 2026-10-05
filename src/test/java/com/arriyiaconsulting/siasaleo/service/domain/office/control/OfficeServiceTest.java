@@ -38,8 +38,8 @@ class OfficeServiceTest {
         when(offices.findAllOrderedByName()).thenReturn(List.of(deputy, president));
 
         assertEquals(List.of(
-                new OfficeDto(7L, "Deputy Governor", "DG", null, "County"),
-                new OfficeDto(1L, "President", "PRES", "Head of State and Government", "National")),
+                new OfficeDto(7L, "Deputy Governor", "DG", null, "County", "KE"),
+                new OfficeDto(1L, "President", "PRES", "Head of State and Government", "National", "KE")),
                 service.findAll());
     }
 
@@ -53,7 +53,7 @@ class OfficeServiceTest {
     void findByIdMapsOfficeWithNullableDescription() {
         Office governor = office(6L, "Governor", "GOV", "County");
         when(offices.findById(6L)).thenReturn(Optional.of(governor));
-        assertEquals(new OfficeDto(6L, "Governor", "GOV", null, "County"),
+        assertEquals(new OfficeDto(6L, "Governor", "GOV", null, "County", "KE"),
                 service.findById(6L).orElseThrow());
     }
 
@@ -69,6 +69,7 @@ class OfficeServiceTest {
         when(office.getName()).thenReturn(name);
         when(office.getAbbreviation()).thenReturn(abbreviation);
         when(office.getLevel()).thenReturn(level);
+        when(office.getCountryCode()).thenReturn("KE");
         return office;
     }
 }
