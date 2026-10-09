@@ -12,5 +12,6 @@ public record PoliticalPartySymbolDto(
         @Schema(required = true, nullable = true) LocalDate fromDate,
         // Null while the symbol is the one on the ballot.
         @Schema(required = true, nullable = true) LocalDate uptoDate,
-        @Schema(required = true) boolean current) {
+        @Schema(required = true) boolean current,
+        Long imageAssetId) {
 }

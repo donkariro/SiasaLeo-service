@@ -8,7 +8,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.dto.*;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.entity.PublicationStatus;
 import com.arriyiaconsulting.siasaleo.service.domain.office.repository.OfficeholderRepository;
 import com.arriyiaconsulting.siasaleo.service.domain.office.mapping.OfficeHistoryMapper;
-import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.control.DigitalAssetService;
+import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.control.EvidencePolicy;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.error.RecordNotFoundException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -26,7 +26,7 @@ public class ClaimService {
     @Inject private OfficeholderRepository officeholders;
     @Inject private OfficeHistoryMapper officeMapper;
     @Inject private PerformanceMapper mapper;
-    @Inject private DigitalAssetService assets;
+    @Inject private EvidencePolicy assets;
     @Inject private AssessmentService assessments;
 
     @Transactional public ClaimRevisionDto createClaim(CreateClaimRevisionRequest request, long actor) {
@@ -47,7 +47,7 @@ public class ClaimService {
         return mapper.toDto(revisions.insert(revision));
     }
     @Transactional public ClaimEvidenceDto addClaimEvidence(long id, EvidenceRequest request) {
-        requireDraft(claim(id).getPublicationStatus()); assets.requireSealed(request.assetVersionId());
+        requireDraft(claim(id).getPublicationStatus()); assets.requireEvidence(request.assetVersionId());
         ClaimEvidence entity = new ClaimEvidence();
         entity.setRecordId(id); entity.setAssetVersionId(request.assetVersionId());
         entity.setRelationshipCode(request.relationshipCode()); entity.setLocator(request.locator()); entity.setCaption(request.caption());

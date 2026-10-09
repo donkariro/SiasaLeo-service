@@ -68,15 +68,22 @@ class PoliticalPartySymbolServiceTest {
         savePassesThrough();
 
         PoliticalPartySymbolDto adopted = service.adopt(PARTY_ID,
-                new AdoptSymbolRequest("Key", "party_007_009_KNC.jpeg", null));
+                new AdoptSymbolRequest("Key", null, null));
 
         assertEquals(PARTY_ID, adopted.politicalPartyId());
         assertEquals("Key", adopted.symbolDescription());
-        assertEquals("party_007_009_KNC.jpeg", adopted.imageFile());
+        assertNull(adopted.imageFile());
         assertEquals(LocalDate.now(), adopted.fromDate());
         assertNull(adopted.uptoDate());
         assertTrue(adopted.current());
         verify(entityManager, never()).flush();
+    }
+
+    @Test
+    void legacyFilenameCannotBypassAssetSelection() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.adopt(PARTY_ID, new AdoptSymbolRequest("Key", "unverified.jpeg", null)));
+        verify(symbols, never()).save(any());
     }
 
     @Test

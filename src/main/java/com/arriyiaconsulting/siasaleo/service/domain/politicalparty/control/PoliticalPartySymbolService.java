@@ -48,6 +48,7 @@ public class PoliticalPartySymbolService {
 
     @Transactional
     public PoliticalPartySymbolDto adopt(Long partyId, AdoptSymbolRequest request) {
+        if (request.imageFile() != null) throw new IllegalArgumentException("Use party-media to select an asset; imageFile is legacy read-only data");
         PoliticalParty party = requireParty(partyId);
         LocalDate fromDate = dateOrToday(request.fromDate());
         Optional<PoliticalPartySymbol> inUse = symbols.findCurrentByParty(party.getId());

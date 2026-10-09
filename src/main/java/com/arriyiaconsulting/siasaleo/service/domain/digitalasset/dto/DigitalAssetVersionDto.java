@@ -2,8 +2,6 @@ package com.arriyiaconsulting.siasaleo.service.domain.digitalasset.dto;
 
 import jakarta.json.bind.annotation.JsonbProperty;
 import java.time.*;
-import java.math.BigDecimal;
-import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.entity.*;
 
 public record DigitalAssetVersionDto(
     @JsonbProperty("id") Long id,
@@ -17,5 +15,8 @@ public record DigitalAssetVersionDto(
     @JsonbProperty("recorded_by_account_id") Long recordedByAccountId,
     @JsonbProperty("recorded_at") OffsetDateTime recordedAt,
     @JsonbProperty("sealed_at") OffsetDateTime sealedAt,
-    @JsonbProperty("row_version") Long rowVersion
+    @JsonbProperty("row_version") Long rowVersion,
+    @JsonbProperty("snapshot_title") String snapshotTitle,
+    @JsonbProperty("snapshot_description") String snapshotDescription,
+    @JsonbProperty("snapshot_asset_type") String snapshotAssetType
 ) {}

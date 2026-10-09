@@ -38,7 +38,7 @@ try {
     await db.exec(`
         INSERT INTO user_account(id,person_id,email,password_hash,status) OVERRIDING SYSTEM VALUE
           VALUES(-950,NULL,'editor@example.test','unused','ACTIVE'),(-951,-951,'issuer@example.test','unused','ACTIVE');
-        INSERT INTO digital_asset(id,title,asset_type,created_by_account_id) OVERRIDING SYSTEM VALUE VALUES(-950,'Inspection report','REPORT',-950);
+        INSERT INTO digital_asset(id,title,asset_type,created_by_account_id,visibility) OVERRIDING SYSTEM VALUE VALUES(-950,'Inspection report','REPORT',-950,'PUBLIC');
         INSERT INTO digital_asset_version(id,asset_id,version_number,source_url,provenance,recorded_by_account_id) OVERRIDING SYSTEM VALUE
           VALUES(-950,-950,1,'https://example.test/report.pdf','Archived institutional report',-950),(-951,-950,2,NULL,'Upload only',-950);
         UPDATE digital_asset_version SET sealed_at=CURRENT_TIMESTAMP WHERE id=-950;

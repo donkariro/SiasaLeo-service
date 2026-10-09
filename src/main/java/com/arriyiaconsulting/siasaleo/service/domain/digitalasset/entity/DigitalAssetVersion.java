@@ -2,8 +2,6 @@ package com.arriyiaconsulting.siasaleo.service.domain.digitalasset.entity;
 
 import jakarta.persistence.*;
 import java.time.*;
-import java.math.BigDecimal;
-import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.entity.*;
 
 /** JPA mapping for digital_asset_version; foreign-key IDs follow the existing Seat/Contest convention. */
 @Entity
@@ -32,7 +30,7 @@ public class DigitalAssetVersion {
     @Column(name = "source_published_on", nullable = true)
     private LocalDate sourcePublishedOn;
 
-    @Column(name = "provenance", nullable = false)
+    @Column(name = "provenance", nullable = true)
     private String provenance;
 
     @Column(name = "recorded_by_account_id", nullable = true)
@@ -49,6 +47,18 @@ public class DigitalAssetVersion {
     private Long rowVersion;
 
     public DigitalAssetVersion() {}
+
+    @Column(name = "snapshot_title") private String snapshotTitle;
+    @Column(name = "snapshot_description") private String snapshotDescription;
+    @Column(name = "snapshot_asset_type") private String snapshotAssetType;
+    public String getSnapshotTitle() { return snapshotTitle; }
+    public String getSnapshotDescription() { return snapshotDescription; }
+    public String getSnapshotAssetType() { return snapshotAssetType; }
+    public void snapshot(DigitalAsset asset) {
+        snapshotTitle = asset.getTitle();
+        snapshotDescription = asset.getDescription();
+        snapshotAssetType = asset.getAssetType();
+    }
 
     public Long getId() { return id; }
 

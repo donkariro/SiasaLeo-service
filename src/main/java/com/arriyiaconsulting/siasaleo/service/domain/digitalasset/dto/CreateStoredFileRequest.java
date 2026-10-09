@@ -1,10 +1,8 @@
 package com.arriyiaconsulting.siasaleo.service.domain.digitalasset.dto;
 
 import jakarta.validation.constraints.*;
+import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.entity.RepresentationType;
 import jakarta.json.bind.annotation.JsonbProperty;
-import java.time.*;
-import java.math.BigDecimal;
-import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.entity.*;
 
 public record CreateStoredFileRequest(
     @JsonbProperty("representation_type") @NotNull RepresentationType representationType,

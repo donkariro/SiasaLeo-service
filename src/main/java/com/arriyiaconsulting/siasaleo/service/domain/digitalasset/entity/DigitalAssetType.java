@@ -1,9 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.domain.digitalasset.entity;
 
 import jakarta.persistence.*;
-import java.time.*;
-import java.math.BigDecimal;
-import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.entity.*;
 
 /** JPA mapping for asset_type; foreign-key IDs follow the existing Seat/Contest convention. */
 @Entity

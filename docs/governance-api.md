@@ -6,14 +6,16 @@ revision numbers or publication timestamps. Writes return HTTP 200 with the
 created/updated record. Missing records return 404, wrong owners 403, invalid
 data/state 400 and duplicate identities 409.
 
-Performance/history writes require ADMINISTRATOR. Manifesto/asset writes
-require USER or ADMINISTRATOR plus ownership. Admin status does not permit
+Performance/history writes require ADMINISTRATOR. Manifesto writes require
+ownership; asset writes require the permissions in [digital-assets.md](digital-assets.md).
+Both require USER or ADMINISTRATOR. Admin status does not permit
 publishing as someone else's candidate. Account IDs come from authentication.
 
 ## Catalogues
 
 GET `/governance/catalogs/{kind}` exposes `policy-areas`, `units`, `indicators`,
-`work-effort-types`, `participation-roles`, `asset-types`, `evidence-relationships`.
+`work-effort-types`, `participation-roles`, `evidence-relationships`. Asset types
+moved to GET `/digital-assets/types`; `/governance/catalogs/asset-types` remains a compatibility alias.
 Retired rows remain readable; reference retirement is currently a database
 administration operation. Workflow states are fixed, not user-defined.
 
@@ -33,24 +35,41 @@ Existing offices remain KE; office names/abbreviations are unique within country
 
 ## Digital assets
 
-1. POST `/digital-assets`: `title`, `asset_type`, optional `description`.
-2. POST `/digital-assets/{id}/versions`: `provenance`; optional HTTP/HTTPS `source_url`,
-   `author_party_id`, `publisher_party_id`, `source_published_on`.
+Design notes: [digital-assets.md](digital-assets.md).
+
+1. POST `/digital-assets`: `title`, `asset_type`; optional `description`,
+   `visibility` (PRIVATE by default, or PUBLIC), `owner_party_id` (requires party media authority).
+2. POST `/digital-assets/{id}/versions`: optional `provenance` (not blank when
+   given), HTTP/HTTPS `source_url`, `author_party_id`, `publisher_party_id`,
+   `source_published_on`.
 3. POST `/digital-assets/versions/{id}/files` for an existing stored file:
    `representation_type`, `storage_key`, `original_filename`, `media_type`,
    positive `byte_size`, lowercase 64-character `sha256`.
-4. POST `/digital-assets/versions/{id}/seal` before attaching the version as evidence.
+4. POST `/digital-assets/versions/{id}/seal` before linking the version anywhere.
 
 Representations: ORIGINAL, PREVIEW, THUMBNAIL, TRANSCRIPT. Sealing requires a source
-URL or file. GET `/digital-assets/me/versions/{id}` reads the owner's draft; GET
-`/digital-assets/versions/{id}` reads public sealed metadata, excluding storage keys.
+URL or file metadata. GET `/digital-assets/me/versions/{id}` reads authorized versions;
+GET `/digital-assets/versions/{id}` reads accessible versions (anonymous callers see sealed PUBLIC versions),
+excluding storage keys. GET `/digital-assets/{id}/current` (or
+`/digital-assets/me/{id}/current` for the owner) returns the latest sealed version,
+for links that follow an asset instead of pinning a version.
+
+Evidence (claims, observations, assessments, work efforts, manifesto and
+commitment assets, announcements, officeholder evidence) must cite a sealed
+version of a PUBLIC asset with provenance. Person asset links only need a sealed
+version.
 Source authors/publishers are independent of the uploading account.
 
 This registers metadata; it does not receive bytes, fetch URLs, verify hashes,
 generate previews or issue signed downloads. Those operations need a deployment
 file/object-storage adapter; no provider or bucket is configured here. External
-source URLs are usable independently. Sealing makes metadata public but does not
-authenticate the evidence.
+source URLs are usable independently. Sealing freezes a version; visibility is
+separate and sealing does not authenticate the source. PUBLIC evidence must be
+selected explicitly. Referenced public evidence cannot subsequently be hidden.
+
+See [Digital asset uploads, storage, and downloads](digital-asset-file-storage.md)
+for the proposed file transfer implementation, access rules, failure handling,
+and acceptance checks. The proposed routes in that guide are not implemented yet.
 
 ## Historical officeholders
 

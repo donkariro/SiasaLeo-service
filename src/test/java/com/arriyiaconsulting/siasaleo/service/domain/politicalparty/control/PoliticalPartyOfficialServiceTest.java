@@ -75,13 +75,13 @@ class PoliticalPartyOfficialServiceTest {
         savePassesThrough();
 
         PoliticalPartyOfficialDto appointed = service.appoint(new AppointOfficialRequest(
-                PERSON_ID, PARTY_ID, CHAIRPERSON, null, "official_5.jpeg", "A short note"));
+                PERSON_ID, PARTY_ID, CHAIRPERSON, null, null, "A short note"));
 
         assertEquals(PERSON_ID, appointed.officialId());
         assertEquals(PARTY_ID, appointed.politicalPartyId());
         assertEquals("Orange Democratic Movement", appointed.partyName());
         assertEquals(CHAIRPERSON, appointed.positionName());
-        assertEquals("official_5.jpeg", appointed.photo());
+        assertNull(appointed.photo());
         assertEquals("A short note", appointed.about());
         assertNull(appointed.uptoDate());
         assertTrue(appointed.current());
@@ -101,6 +101,13 @@ class PoliticalPartyOfficialServiceTest {
                 ArgumentCaptor.forClass(PoliticalPartyOfficial.class);
         verify(officials).save(saved.capture());
         assertEquals(LocalDate.now(), saved.getValue().getFromDate());
+    }
+
+    @Test
+    void legacyPhotoCannotBypassAssetSelection() {
+        assertThrows(IllegalArgumentException.class, () -> service.appoint(
+                new AppointOfficialRequest(PERSON_ID, PARTY_ID, CHAIRPERSON, null, "unverified.jpeg", null)));
+        verify(officials, never()).save(any());
     }
 
     @Test

@@ -26,6 +26,9 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "politicalparty_official")
 public class PoliticalPartyOfficial {
+    @Column(name = "photo_asset_id")
+    private Long photoAssetId;
+    public Long getPhotoAssetId() { return photoAssetId; }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

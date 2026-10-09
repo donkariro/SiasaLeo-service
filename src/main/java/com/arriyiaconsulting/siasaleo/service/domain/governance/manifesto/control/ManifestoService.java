@@ -7,7 +7,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.governance.manifesto.mappin
 import com.arriyiaconsulting.siasaleo.service.domain.governance.performance.control.AssessmentService;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.dto.*;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.entity.PublicationStatus;
-import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.control.DigitalAssetService;
+import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.control.EvidencePolicy;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.entity.Candidacy;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.repository.CandidacyRepository;
 import com.arriyiaconsulting.siasaleo.service.security.identity.entity.UserAccount;
@@ -36,7 +36,7 @@ public class ManifestoService {
     @Inject private UserAccountRepository accounts;
     @Inject private CandidacyRepository candidacies;
     @Inject private ManifestoMapper mapper;
-    @Inject private DigitalAssetService assets;
+    @Inject private EvidencePolicy assets;
     @Inject private AssessmentService delivery;
 
     @Transactional public ManifestoDto create(CreateManifestoRequest request, long actor) {
@@ -104,13 +104,13 @@ public class ManifestoService {
         return mapper.toDto(policies.insert(entity));
     }
     @Transactional public ManifestoAttachmentDto attachVersionAsset(long versionId, AttachmentRequest request, long actor) {
-        requireDraft(ownedVersion(versionId, actor).getPublicationStatus()); assets.requireSealed(request.assetVersionId());
+        requireDraft(ownedVersion(versionId, actor).getPublicationStatus()); assets.requireEvidence(request.assetVersionId());
         ManifestoAttachment entity = new ManifestoAttachment(); entity.setManifestoVersionId(versionId);
         entity.setAssetVersionId(request.assetVersionId()); entity.setCaption(request.caption()); entity.setLocator(request.locator());
         return mapper.toDto(manifestoAttachments.insert(entity));
     }
     @Transactional public CommitmentAttachmentDto attachRevisionAsset(long revisionId, AttachmentRequest request, long actor) {
-        requireUnsealed(ownedRevision(revisionId, actor)); assets.requireSealed(request.assetVersionId());
+        requireUnsealed(ownedRevision(revisionId, actor)); assets.requireEvidence(request.assetVersionId());
         CommitmentAttachment entity = new CommitmentAttachment(); entity.setCommitmentRevisionId(revisionId);
         entity.setAssetVersionId(request.assetVersionId()); entity.setCaption(request.caption()); entity.setLocator(request.locator());
         return mapper.toDto(commitmentAttachments.insert(entity));
@@ -118,7 +118,7 @@ public class ManifestoService {
     @Transactional public PublicationEventDto announce(long versionId, CreatePublicationEventRequest request, long actor) {
         if (ownedVersion(versionId, actor).getPublicationStatus() != PublicationStatus.PUBLISHED)
             throw new IllegalArgumentException("Announcements require a published version");
-        if (request.assetVersionId() != null) assets.requireSealed(request.assetVersionId());
+        if (request.assetVersionId() != null) assets.requireEvidence(request.assetVersionId());
         PublicationEvent entity = mapper.toEntity(request); entity.setManifestoVersionId(versionId); entity.setRecordedByAccountId(actor);
         return mapper.toDto(announcements.insert(entity));
     }

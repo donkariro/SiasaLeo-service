@@ -6,7 +6,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.governance.performance.repo
 import com.arriyiaconsulting.siasaleo.service.domain.governance.performance.mapping.PerformanceMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.dto.*;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.entity.PublicationStatus;
-import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.control.DigitalAssetService;
+import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.control.EvidencePolicy;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.error.RecordNotFoundException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,7 +22,7 @@ public class WorkEffortService {
     @Inject private WorkEffortAssetRepository workAssets;
     @Inject private WorkEffortPolicyAreaRepository workPolicies;
     @Inject private PerformanceMapper mapper;
-    @Inject private DigitalAssetService assets;
+    @Inject private EvidencePolicy assets;
 
     @Transactional public WorkEffortDto createWork(CreateWorkEffortRequest request, long actor) {
         WorkEffort entity = mapper.toEntity(request);
@@ -30,13 +30,13 @@ public class WorkEffortService {
         return mapper.toDto(works.insert(entity));
     }
     @Transactional public WorkEffortParticipationDto createParticipation(CreateWorkEffortParticipationRequest request, long actor) {
-        assets.requireSealed(request.assetVersionId());
+        assets.requireEvidence(request.assetVersionId());
         WorkEffortParticipation entity = mapper.toEntity(request);
         entity.setRecordedByAccountId(actor);
         return mapper.toDto(participations.insert(entity));
     }
     @Transactional public WorkEffortAssetDto addWorkAsset(long id, AttachmentRequest request) {
-        assets.requireSealed(request.assetVersionId());
+        assets.requireEvidence(request.assetVersionId());
         WorkEffortAsset entity = new WorkEffortAsset();
         entity.setWorkEffortId(id); entity.setAssetVersionId(request.assetVersionId());
         entity.setLocator(request.locator()); entity.setCaption(request.caption());

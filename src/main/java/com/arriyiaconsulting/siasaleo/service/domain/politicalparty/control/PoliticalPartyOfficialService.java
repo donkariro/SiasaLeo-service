@@ -45,6 +45,7 @@ public class PoliticalPartyOfficialService {
 
     @Transactional
     public PoliticalPartyOfficialDto appoint(AppointOfficialRequest request) {
+        if (request.photo() != null) throw new IllegalArgumentException("Use party-media to select an asset; photo is legacy read-only data");
         Person official = requirePerson(request.officialId());
         PoliticalParty party = requireParty(request.politicalPartyId());
         // @NotBlank has already run at the boundary, so trimming cannot empty

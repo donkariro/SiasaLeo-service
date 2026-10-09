@@ -5,7 +5,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.governance.performance.enti
 import com.arriyiaconsulting.siasaleo.service.domain.governance.performance.repository.*;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.performance.mapping.PerformanceMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.dto.*;
-import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.control.DigitalAssetService;
+import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.control.EvidencePolicy;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.error.RecordNotFoundException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -20,7 +20,7 @@ public class ObservationService {
     @Inject private TargetObservationRepository comparisons;
     @Inject private ObservationEvidenceRepository observationEvidence;
     @Inject private PerformanceMapper mapper;
-    @Inject private DigitalAssetService assets;
+    @Inject private EvidencePolicy assets;
 
     @Transactional public ObservationDto createObservation(CreateObservationRequest request, long actor) {
         Observation entity = mapper.toEntity(request);
@@ -30,7 +30,7 @@ public class ObservationService {
     @Transactional public PerformanceTargetDto createTarget(CreatePerformanceTargetRequest request) { return mapper.toDto(targets.insert(mapper.toEntity(request))); }
     @Transactional public TargetObservationDto compare(CreateTargetObservationRequest request) { return mapper.toDto(comparisons.insert(mapper.toEntity(request))); }
     @Transactional public ObservationEvidenceDto addObservationEvidence(long id, EvidenceRequest request) {
-        requireDraft(observation(id).getPublicationStatus()); assets.requireSealed(request.assetVersionId());
+        requireDraft(observation(id).getPublicationStatus()); assets.requireEvidence(request.assetVersionId());
         ObservationEvidence entity = new ObservationEvidence();
         entity.setObservationId(id); entity.setAssetVersionId(request.assetVersionId());
         entity.setRelationshipCode(request.relationshipCode()); entity.setLocator(request.locator()); entity.setCaption(request.caption());

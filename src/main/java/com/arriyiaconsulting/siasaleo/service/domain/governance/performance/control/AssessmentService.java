@@ -6,7 +6,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.governance.performance.repo
 import com.arriyiaconsulting.siasaleo.service.domain.governance.performance.mapping.PerformanceMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.dto.*;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.entity.PublicationStatus;
-import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.control.DigitalAssetService;
+import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.control.EvidencePolicy;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.error.RecordNotFoundException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -27,7 +27,7 @@ public class AssessmentService {
     @Inject private WorkEffortRepository works;
     @Inject private WorkEffortParticipationRepository participations;
     @Inject private PerformanceMapper mapper;
-    @Inject private DigitalAssetService assets;
+    @Inject private EvidencePolicy assets;
 
     @Transactional public CommitmentDeliveryLinkDto createDeliveryLink(CreateCommitmentDeliveryLinkRequest request, long actor) {
         CommitmentDeliveryLink entity = mapper.toEntity(request);
@@ -40,7 +40,7 @@ public class AssessmentService {
         return mapper.toDto(assessments.insert(entity));
     }
     @Transactional public AssessmentEvidenceDto addAssessmentEvidence(long id, EvidenceRequest request) {
-        requireDraft(assessment(id).getPublicationStatus()); assets.requireSealed(request.assetVersionId());
+        requireDraft(assessment(id).getPublicationStatus()); assets.requireEvidence(request.assetVersionId());
         AssessmentEvidence entity = new AssessmentEvidence();
         entity.setAssessmentId(id); entity.setAssetVersionId(request.assetVersionId());
         entity.setRelationshipCode(request.relationshipCode()); entity.setLocator(request.locator()); entity.setCaption(request.caption());

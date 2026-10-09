@@ -13,6 +13,7 @@ public interface DigitalAssetMapper {
     @Mapping(target = "title", source = "title")
     @Mapping(target = "description", source = "description")
     @Mapping(target = "assetType", source = "assetType")
+    @Mapping(target = "visibility", source = "visibility", defaultValue = "PRIVATE")
     DigitalAsset toEntity(CreateDigitalAssetRequest request);
 
     DigitalAssetVersionDto toDto(DigitalAssetVersion entity);

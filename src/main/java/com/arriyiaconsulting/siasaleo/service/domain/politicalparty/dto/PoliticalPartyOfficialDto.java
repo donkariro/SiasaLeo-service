@@ -22,6 +22,7 @@ public record PoliticalPartyOfficialDto(
         // Null while the person still holds the position.
         @Schema(required = true, nullable = true) LocalDate uptoDate,
         @Schema(required = true, nullable = true) String photo,
+        Long photoAssetId,
         @Schema(required = true, nullable = true) String about,
         @Schema(required = true) boolean current) {
 }

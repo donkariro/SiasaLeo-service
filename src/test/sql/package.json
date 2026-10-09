@@ -4,8 +4,8 @@
   "description": "Flyway migrations and database invariants checked in an in-process PostgreSQL (PGlite). Run by Maven in the test phase.",
   "type": "module",
   "scripts": {
-    "test": "node run-geography-snapshots.mjs && node run-election-records.mjs && node run-performance.mjs && node run-governance.mjs",
-    "test:full": "node run-geography-snapshots.mjs --full && node run-election-records.mjs --full && node run-performance.mjs --full && node run-governance.mjs --full"
+    "test": "node run-geography-snapshots.mjs && node run-election-records.mjs && node run-performance.mjs && node run-governance.mjs && node run-digital-assets.mjs",
+    "test:full": "node run-geography-snapshots.mjs --full && node run-election-records.mjs --full && node run-performance.mjs --full && node run-governance.mjs --full && node run-digital-assets.mjs --full"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8"
