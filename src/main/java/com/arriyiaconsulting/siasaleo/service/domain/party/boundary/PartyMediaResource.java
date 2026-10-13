@@ -1,7 +1,7 @@
 package com.arriyiaconsulting.siasaleo.service.domain.party.boundary;
 import com.arriyiaconsulting.siasaleo.service.domain.party.control.PartyMediaService;
 import com.arriyiaconsulting.siasaleo.service.domain.party.dto.*;
-import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.dto.*;
+import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.dto.DigitalAssetDetailDto;
 import com.arriyiaconsulting.siasaleo.service.security.identity.control.CallerAccounts;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;

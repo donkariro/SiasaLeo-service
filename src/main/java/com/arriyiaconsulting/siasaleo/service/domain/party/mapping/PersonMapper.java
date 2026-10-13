@@ -9,6 +9,8 @@ import org.mapstruct.Mapping;
 @Mapper(config = MappingConfig.class)
 public interface PersonMapper {
 
+    PersonDigitalAssetDto toDto(PersonDigitalAsset entity);
+
     ClaimablePersonDto toClaimablePersonDto(Person entity);
 
     @Mapping(target = "personId", source = "person.id")

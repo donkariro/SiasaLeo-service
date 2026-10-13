@@ -73,3 +73,5 @@ belonging to another person returns 404. The self-service API derives the person
 from the authenticated account and does not accept a person ID in the body.
 These are recorded qualifications; they do not verify credentials or determine
 candidate eligibility.
+Proposed supporting documents and party vetting are described in
+[Aspirant education evidence](aspirant-education-evidence.md).

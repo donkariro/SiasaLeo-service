@@ -1,4 +1,4 @@
-package com.arriyiaconsulting.siasaleo.service.domain.digitalasset.entity;
+package com.arriyiaconsulting.siasaleo.service.domain.party.entity;
 
 import jakarta.persistence.*;
 

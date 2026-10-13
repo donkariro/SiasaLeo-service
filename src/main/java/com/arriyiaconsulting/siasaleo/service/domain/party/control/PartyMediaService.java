@@ -1,7 +1,7 @@
 package com.arriyiaconsulting.siasaleo.service.domain.party.control;
 
 import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.control.DigitalAssetService;
-import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.dto.*;
+import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.dto.DigitalAssetDetailDto;
 import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.repository.AssetManagementRepository;
 import com.arriyiaconsulting.siasaleo.service.domain.party.dto.*;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.persistence.NativeQueries;

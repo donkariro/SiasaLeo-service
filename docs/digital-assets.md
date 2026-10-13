@@ -157,6 +157,9 @@ Example metadata-only portrait workflow:
 6. Seal a new version to update the selected asset's current edition, or select
    another asset to replace it.
 
+Education records will use the same pinned-version pattern for supporting
+documents. See the [aspirant education evidence proposal](aspirant-education-evidence.md).
+
 ## Political-party legacy media
 
 V58 adds image_asset_id on politicalparty_symbol and photo_asset_id on

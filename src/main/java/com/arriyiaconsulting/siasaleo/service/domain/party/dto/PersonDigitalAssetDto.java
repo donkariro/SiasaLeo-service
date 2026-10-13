@@ -1,4 +1,4 @@
-package com.arriyiaconsulting.siasaleo.service.domain.digitalasset.dto;
+package com.arriyiaconsulting.siasaleo.service.domain.party.dto;
 
 import jakarta.json.bind.annotation.JsonbProperty;
 

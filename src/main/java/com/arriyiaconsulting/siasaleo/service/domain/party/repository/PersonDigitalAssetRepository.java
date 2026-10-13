@@ -1,8 +1,8 @@
-package com.arriyiaconsulting.siasaleo.service.domain.digitalasset.repository;
+package com.arriyiaconsulting.siasaleo.service.domain.party.repository;
 
-import com.arriyiaconsulting.siasaleo.service.domain.digitalasset.entity.*;
+import com.arriyiaconsulting.siasaleo.service.domain.party.entity.PersonDigitalAsset;
+import com.arriyiaconsulting.siasaleo.service.domain.party.entity.PersonDigitalAssetId;
 import jakarta.data.repository.*;
-import jakarta.data.page.PageRequest;
 import java.util.List;
 
 @Repository

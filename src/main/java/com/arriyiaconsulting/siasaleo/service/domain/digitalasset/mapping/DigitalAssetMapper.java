@@ -37,8 +37,6 @@ public interface DigitalAssetMapper {
     @Mapping(target = "sha256", source = "sha256")
     StoredFile toEntity(CreateStoredFileRequest request);
 
-    PersonDigitalAssetDto toDto(PersonDigitalAsset entity);
-
     DigitalAssetTypeDto toDto(DigitalAssetType entity);
 
 }
