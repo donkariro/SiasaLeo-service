@@ -102,6 +102,9 @@ public class RegistrationResource {
                     error(Status.CONFLICT, "Account is already verified");
             case ResendResult.AccountUnavailable() ->
                     error(Status.FORBIDDEN, "Account is locked or disabled");
+            case ResendResult.RateLimited(var retryAfter) ->
+                    error(Status.TOO_MANY_REQUESTS,
+                            "Please wait before requesting another verification code; try again after " + retryAfter);
         };
     }
 

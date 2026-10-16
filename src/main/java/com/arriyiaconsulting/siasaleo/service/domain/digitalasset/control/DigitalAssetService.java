@@ -118,9 +118,9 @@ public class DigitalAssetService {
     }
     public List<DigitalAssetDto> list(Long actor, String term, String type, boolean archived, int page, int size) {
         int offset = offset(page, size);
-        return management.search(actor, term == null ? "" : term, type == null ? "" : type,
-                actor != null && archived, offset, size).stream()
-                .map(id -> mapper.toDto(requireAsset(id))).toList();
+        List<Long> ids = management.search(actor, term == null ? "" : term, type == null ? "" : type,
+                actor != null && archived, offset, size);
+        return ids.isEmpty() ? List.of() : assets.findByIds(ids).stream().map(mapper::toDto).toList();
     }
     public List<DigitalAssetVersionDto> history(long id, Long actor, int page, int size) {
         int offset = offset(page, size);

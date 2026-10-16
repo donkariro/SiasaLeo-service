@@ -42,6 +42,7 @@ public class RegistrationService {
     // Package-private so RoutingVerificationSender can quote the real expiry
     // in the messages it composes.
     static final Duration CODE_TTL = Duration.ofMinutes(15);
+    static final Duration RESEND_COOLDOWN = Duration.ofMinutes(1);
     private static final int MAX_CODE_ATTEMPTS = 5;
 
     @Inject
@@ -159,6 +160,15 @@ public class RegistrationService {
             case ACTIVE -> new ResendResult.AlreadyVerified();
             case LOCKED, DISABLED -> new ResendResult.AccountUnavailable();
             case PENDING_ACTIVATION -> {
+                Optional<VerificationCode> latest = codes
+                        .findActiveByAccount(account.getId(), Limit.of(1)).stream().findFirst();
+                OffsetDateTime now = OffsetDateTime.now();
+                if (latest.isPresent() && latest.get().getCreatedAt() != null) {
+                    OffsetDateTime retryAfter = latest.get().getCreatedAt().plus(RESEND_COOLDOWN);
+                    if (now.isBefore(retryAfter)) {
+                        yield new ResendResult.RateLimited(retryAfter);
+                    }
+                }
                 issueCode(account, identifier);
                 yield new ResendResult.CodeSent();
             }

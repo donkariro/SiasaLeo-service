@@ -157,6 +157,15 @@ class DigitalAssetServiceTest {
  @Test void storageKeysAreNotPublic() {
   assertTrue(Arrays.stream(StoredFileDto.class.getRecordComponents()).noneMatch(c->c.getName().equals("storageKey")));
  }
+ @Test void listBatchLoadsMatchingAssetsWithoutPerRowQueries() {
+  var first=makeAsset(AssetVisibility.PUBLIC); var second=makeAsset(AssetVisibility.PRIVATE); id(second,2L);
+  when(management.search(1L,"","",false,0,25)).thenReturn(List.of(4L,2L));
+  when(assets.findByIds(List.of(4L,2L))).thenReturn(List.of(first,second));
+  var results=service.list(1L,null,null,false,0,25);
+  assertEquals(List.of(4L,2L),results.stream().map(DigitalAssetDto::id).toList());
+  verify(assets).findByIds(List.of(4L,2L));
+  verify(assets,never()).findById(anyLong());
+ }
  private void activeType() { DigitalAssetType t=new DigitalAssetType(); t.setCode("REPORT"); when(types.findById("REPORT")).thenReturn(Optional.of(t)); }
  private DigitalAsset makeAsset(AssetVisibility visibility) {
   DigitalAsset a=new DigitalAsset(); id(a,4L); a.setCreatedByAccountId(1L); a.setOwnerAccountId(1L); a.setVisibility(visibility); return a;

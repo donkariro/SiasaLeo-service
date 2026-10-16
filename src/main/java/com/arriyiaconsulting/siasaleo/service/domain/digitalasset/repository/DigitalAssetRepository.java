@@ -9,6 +9,8 @@ import java.util.List;
 public interface DigitalAssetRepository extends BasicRepository<DigitalAsset, Long> {
     @Insert DigitalAsset insert(DigitalAsset entity);
     @Update DigitalAsset update(DigitalAsset entity);
+    @Query("FROM DigitalAsset WHERE id IN :ids ORDER BY id DESC")
+    List<DigitalAsset> findByIds(@Param("ids") List<Long> ids);
     @Query("FROM DigitalAsset ORDER BY id")
     List<DigitalAsset> ordered();
 }

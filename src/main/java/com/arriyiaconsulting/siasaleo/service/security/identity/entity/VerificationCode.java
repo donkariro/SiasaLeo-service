@@ -51,11 +51,14 @@ public class VerificationCode {
         this.userAccount = userAccount;
         this.codeHash = codeHash;
         this.expiresAt = expiresAt;
+        this.createdAt = OffsetDateTime.now();
     }
 
     @PrePersist
     void onPersist() {
-        createdAt = OffsetDateTime.now();
+        if (createdAt == null) {
+            createdAt = OffsetDateTime.now();
+        }
     }
 
     public boolean isExpired(OffsetDateTime now) {
@@ -80,5 +83,9 @@ public class VerificationCode {
 
     public int getAttempts() {
         return attempts;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
     }
 }

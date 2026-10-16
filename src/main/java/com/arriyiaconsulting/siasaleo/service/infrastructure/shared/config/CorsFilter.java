@@ -1,5 +1,6 @@
 package com.arriyiaconsulting.siasaleo.service.infrastructure.shared.config;
 
+import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -9,17 +10,20 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * CORS support for browser clients. Preflight OPTIONS requests are answered
  * before resource matching (so they need no OPTIONS methods on resources);
  * the response filter tags every cross-origin response.
  *
- * Allowed origins come from the CORS_ALLOWED_ORIGINS environment variable
- * (comma-separated, e.g. "https://app.siasaleo.com,http://localhost:5173");
- * unset means "*", which is only acceptable for development.
+ * Allowed origins come from the cors.allowed.origins MicroProfile Config
+ * property or the CORS_ALLOWED_ORIGINS environment variable (comma-separated,
+ * e.g. "https://app.siasaleo.com,http://localhost:5173"); unset means "*",
+ * which is only acceptable for development.
  */
 @Provider
 @PreMatching
@@ -34,6 +38,12 @@ public class CorsFilter implements ContainerRequestFilter, ContainerResponseFilt
 
     public CorsFilter() {
         this(System.getenv("CORS_ALLOWED_ORIGINS"));
+    }
+
+    @Inject
+    public CorsFilter(
+            @ConfigProperty(name = "cors.allowed.origins") Optional<String> configuredOrigins) {
+        this(configuredOrigins.orElseGet(() -> System.getenv("CORS_ALLOWED_ORIGINS")));
     }
 
     CorsFilter(String configuredOrigins) {
