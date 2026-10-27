@@ -1,7 +1,10 @@
 # Education evidence and political party applications
 
 Status: architecture proposal and implementation plan, recorded 2026-10-12.
-The associations and application workflows proposed here are not implemented.
+The education associations proposed here are not implemented. Party applications
+were implemented on 2026-10-27 as a separate `nomination` domain whose
+requirements are versioned [forms](forms.md); see [nominations](nominations.md).
+Phases 6-8 (reviewer access and review) remain open.
 
 ## Purpose
 

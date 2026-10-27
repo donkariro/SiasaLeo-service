@@ -21,6 +21,11 @@ public class NativeQueries {
         try { query(sql,args).executeUpdate(); }
         catch (PersistenceException e) { throw classify(e); }
     }
+    /** Like execute, but returns the affected row count for compare-and-set updates. */
+    public int update(String sql, Object... args) {
+        try { return query(sql,args).executeUpdate(); }
+        catch (PersistenceException e) { throw classify(e); }
+    }
     public long insert(String sql, Object... args) {
         try { return ((Number)scalar(sql,args)).longValue(); }
         catch (PersistenceException e) { throw classify(e); }
