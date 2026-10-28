@@ -15,6 +15,7 @@ import java.util.Arrays;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.boundary.CandidacyResource;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.boundary.GeographySnapshotResource;
 import com.arriyiaconsulting.siasaleo.service.domain.electoralgeography.boundary.SnapshotAreaResource;
+import com.arriyiaconsulting.siasaleo.service.security.identity.boundary.RegistrationResource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -152,6 +153,18 @@ class RolesAllowedFeatureTest {
         verify(configure(GeographySnapshotResource.class, "get"), never()).register(any(Object.class));
         for (String name : Set.of("list", "get", "children", "subtree")) {
             verify(configure(SnapshotAreaResource.class, name), never()).register(any(Object.class));
+        }
+    }
+
+    @Test
+    void accountReadRequiresSignedInCallerWhileRegistrationStepsStayPublic() {
+        RolesAllowedFilter filter = filterFor(RegistrationResource.class, "account");
+        assertEquals(Decision.CHALLENGE, filter.decide(null));
+        assertEquals(Decision.ALLOW, filter.decide(authenticatedWith(Set.of("USER"))));
+        assertEquals(Decision.ALLOW, filter.decide(authenticatedWith(Set.of("ADMINISTRATOR"))));
+
+        for (String name : Set.of("register", "verify", "resendCode")) {
+            verify(configure(RegistrationResource.class, name), never()).register(any(Object.class));
         }
     }
 

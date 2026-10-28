@@ -3,6 +3,7 @@ package com.arriyiaconsulting.siasaleo.service.domain.governance.manifesto.contr
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.entity.Candidacy;
 import com.arriyiaconsulting.siasaleo.service.domain.candidate.repository.CandidacyRepository;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.manifesto.dto.CreateManifestoRequest;
+import com.arriyiaconsulting.siasaleo.service.domain.governance.manifesto.dto.CreateManifestoVersionRequest;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.manifesto.entity.Manifesto;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.manifesto.entity.ManifestoVersion;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.manifesto.mapping.ManifestoMapper;
@@ -11,6 +12,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.governance.manifesto.reposi
 import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.entity.PublicationStatus;
 import com.arriyiaconsulting.siasaleo.service.domain.party.entity.Person;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.error.RecordAccessDeniedException;
+import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.persistence.NativeQueries;
 import com.arriyiaconsulting.siasaleo.service.security.identity.entity.UserAccount;
 import com.arriyiaconsulting.siasaleo.service.security.identity.repository.UserAccountRepository;
 import java.util.Optional;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -44,6 +47,9 @@ class ManifestoServiceTest {
 
     @Mock
     private CandidacyRepository candidacies;
+
+    @Mock
+    private NativeQueries locks;
 
     @InjectMocks
     private ManifestoService service;
@@ -102,6 +108,23 @@ class ManifestoServiceTest {
         assertEquals(2L, inserted.getValue().getIssuerPersonId());
         assertEquals(5L, inserted.getValue().getCreatedByAccountId());
         assertEquals(3L, inserted.getValue().getCandidacyId());
+    }
+
+    @Test
+    void versionAllocationLocksManifestoBeforeReadingCounter() {
+        Manifesto manifesto = new Manifesto();
+        manifesto.setIssuerPersonId(2L);
+        when(locks.lock(Manifesto.class, 4L)).thenReturn(Optional.of(manifesto));
+        account(5L, true, 2L);
+        when(versions.latestNumber(4L)).thenReturn(2);
+        when(versions.insert(any())).then(returnsFirstArg());
+
+        var result = service.createVersion(4L, new CreateManifestoVersionRequest("2027 Plan", "en", "Text"), 5L);
+
+        assertEquals(3, result.versionNumber());
+        InOrder order = inOrder(locks, versions);
+        order.verify(locks).lock(Manifesto.class, 4L);
+        order.verify(versions).latestNumber(4L);
     }
 
     private void draftVersion(long id, long manifestoId) {

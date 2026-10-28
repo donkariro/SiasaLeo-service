@@ -157,8 +157,7 @@ public class PersonClaimService {
      */
     public List<ClaimablePersonDto> searchClaimable(String name, int page, int size) {
         String pattern = "%" + name.strip().toLowerCase() + "%";
-        return persons.searchByName(pattern, pageRequest(page, size)).stream()
-                .filter(person -> accounts.findByPersonId(person.getId()).isEmpty())
+        return persons.searchClaimableByName(pattern, pageRequest(page, size)).stream()
                 .map(personMapper::toClaimablePersonDto)
                 .toList();
     }

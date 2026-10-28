@@ -21,7 +21,10 @@ public class GovernanceDatabaseExceptionMapper implements ExceptionMapper<Persis
                 if (state.equals("23505")) {
                     return response(409, "A record with this identity already exists");
                 }
-                if (state.startsWith("23") || state.startsWith("22")) {
+                if (state.equals("23P01") || state.equals("40001") || state.equals("40P01")) {
+                    return response(409, "Write conflicts with a concurrent change or constraint; reload and retry");
+                }
+                if (state.startsWith("23") || state.startsWith("22") || state.equals("P0001")) {
                     return response(400, "Invalid fields, references, publication state or evidence; check the API requirements");
                 }
             }

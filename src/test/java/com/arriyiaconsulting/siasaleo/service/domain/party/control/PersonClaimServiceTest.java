@@ -249,18 +249,16 @@ class PersonClaimServiceTest {
     @Test
     void claimableSearchLeavesOutPeopleAnAccountAlreadyHolds() {
         Person free = givenPersonWithId(11L);
-        Person taken = givenPersonWithId(12L);
-        when(persons.searchByName(any(), any(PageRequest.class)))
-                .thenReturn(List.of(free, taken));
-        when(accounts.findByPersonId(11L)).thenReturn(Optional.empty());
-        when(accounts.findByPersonId(12L)).thenReturn(Optional.of(mock(UserAccount.class)));
+        when(persons.searchClaimableByName(any(), any(PageRequest.class)))
+                .thenReturn(List.of(free));
 
         assertEquals(List.of(personMapper.toClaimablePersonDto(free)),
                 service.searchClaimable("  Odhiambo ", 0, 20));
 
         ArgumentCaptor<String> pattern = ArgumentCaptor.forClass(String.class);
-        verify(persons).searchByName(pattern.capture(), any(PageRequest.class));
+        verify(persons).searchClaimableByName(pattern.capture(), any(PageRequest.class));
         assertEquals("%odhiambo%", pattern.getValue());
+        verify(accounts, never()).findByPersonId(anyLong());
     }
 
     @Test

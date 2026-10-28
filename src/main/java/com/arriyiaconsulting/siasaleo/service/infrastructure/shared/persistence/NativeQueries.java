@@ -2,11 +2,15 @@ package com.arriyiaconsulting.siasaleo.service.infrastructure.shared.persistence
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.*;
 import java.util.List;
+import java.util.Optional;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.error.RecordConflictException;
 /** Bound native SQL operations; no domain-specific queries or lifecycle decisions. */
 @ApplicationScoped
 public class NativeQueries {
     @PersistenceContext private EntityManager em;
+    public <T> Optional<T> lock(Class<T> type, Object id) {
+        return Optional.ofNullable(em.find(type, id, LockModeType.PESSIMISTIC_WRITE));
+    }
     private Query query(String sql, Object... args) {
         Query q = em.createNativeQuery(sql);
         for (int i=0;i<args.length;i++) q.setParameter(i+1,args[i]);

@@ -10,6 +10,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.office.repository.Officehol
 import com.arriyiaconsulting.siasaleo.service.domain.office.mapping.OfficeHistoryMapper;
 import com.arriyiaconsulting.siasaleo.service.domain.governance.shared.control.EvidencePolicy;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.error.RecordNotFoundException;
+import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.persistence.NativeQueries;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -28,6 +29,7 @@ public class ClaimService {
     @Inject private PerformanceMapper mapper;
     @Inject private EvidencePolicy assets;
     @Inject private AssessmentService assessments;
+    @Inject private NativeQueries locks;
 
     @Transactional public ClaimRevisionDto createClaim(CreateClaimRevisionRequest request, long actor) {
         AchievementClaim claim;
@@ -36,7 +38,7 @@ public class ClaimService {
             claim.setOfficeholderId(request.officeholderId());
             claim = claims.insert(claim);
         } else {
-            claim = claims.findById(request.claimId()).orElseThrow(RecordNotFoundException::new);
+            claim = locks.lock(AchievementClaim.class, request.claimId()).orElseThrow(RecordNotFoundException::new);
             if (!claim.getOfficeholderId().equals(request.officeholderId()))
                 throw new IllegalArgumentException("A claim cannot be moved to another tenure");
         }

@@ -1,5 +1,7 @@
 package com.arriyiaconsulting.siasaleo.service.security.identity.boundary;
 
+import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.error.RecordAccessDeniedException;
+import com.arriyiaconsulting.siasaleo.service.security.identity.control.CallerAccounts;
 import com.arriyiaconsulting.siasaleo.service.security.identity.mapping.IdentityMapper;
 import com.arriyiaconsulting.siasaleo.service.security.identity.control.RegistrationService;
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.RegisterRequest;
@@ -11,6 +13,7 @@ import com.arriyiaconsulting.siasaleo.service.security.identity.dto.Verification
 import com.arriyiaconsulting.siasaleo.service.security.identity.dto.VerifyRequest;
 import com.arriyiaconsulting.siasaleo.service.security.identity.repository.UserAccountRepository;
 import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -25,6 +28,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.core.UriInfo;
 import java.util.Map;
 
@@ -32,13 +36,13 @@ import java.util.Map;
  * Sign-up endpoints. Each handler is an exhaustive switch over the service's
  * sealed result type, so every business outcome has an explicit HTTP mapping.
  *
- * Marked @PermitAll rather than left to RolesAllowedFeature's open default:
- * these are the endpoints that mint the very token authorization needs, so
- * they must stay reachable even if that default is ever tightened.
+ * The unauthenticated sign-up steps are marked @PermitAll explicitly rather
+ * than left to RolesAllowedFeature's open default: they mint the account that
+ * authorization needs, while reading an account record requires the owner or
+ * an administrator.
  */
 @Path("auth")
 @RequestScoped
-@PermitAll
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class RegistrationResource {
@@ -52,8 +56,12 @@ public class RegistrationResource {
     @Inject
     private UserAccountRepository accounts;
 
+    @Inject
+    private CallerAccounts callers;
+
     @POST
     @Path("register")
+    @PermitAll
     public Response register(@Valid RegisterRequest request, @Context UriInfo uriInfo) {
         return switch (service.register(request)) {
             case RegistrationResult.Registered(UserAccountDto account) ->
@@ -72,6 +80,7 @@ public class RegistrationResource {
 
     @POST
     @Path("verify")
+    @PermitAll
     public Response verify(@Valid VerifyRequest request) {
         return switch (service.verify(request)) {
             case VerificationResult.Verified(UserAccountDto account) -> Response.ok(account).build();
@@ -92,6 +101,7 @@ public class RegistrationResource {
 
     @POST
     @Path("resend-code")
+    @PermitAll
     public Response resendCode(@Valid ResendCodeRequest request) {
         return switch (service.resendCode(request)) {
             case ResendResult.CodeSent() ->
@@ -110,7 +120,11 @@ public class RegistrationResource {
 
     @GET
     @Path("accounts/{id}")
-    public UserAccountDto account(@PathParam("id") Long id) {
+    @RolesAllowed({"USER", "ADMINISTRATOR"})
+    public UserAccountDto account(@PathParam("id") Long id, @Context SecurityContext security) {
+        if (!security.isUserInRole("ADMINISTRATOR") && !callers.requireId(security).equals(id)) {
+            throw new RecordAccessDeniedException();
+        }
         return accounts.findById(id).map(identityMapper::toUserAccountDto)
                 .orElseThrow(NotFoundException::new);
     }

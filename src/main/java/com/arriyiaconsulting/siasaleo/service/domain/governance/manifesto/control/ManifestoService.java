@@ -13,6 +13,7 @@ import com.arriyiaconsulting.siasaleo.service.domain.candidate.repository.Candid
 import com.arriyiaconsulting.siasaleo.service.security.identity.entity.UserAccount;
 import com.arriyiaconsulting.siasaleo.service.security.identity.repository.UserAccountRepository;
 import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.error.*;
+import com.arriyiaconsulting.siasaleo.service.infrastructure.shared.persistence.NativeQueries;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -38,6 +39,7 @@ public class ManifestoService {
     @Inject private ManifestoMapper mapper;
     @Inject private EvidencePolicy assets;
     @Inject private AssessmentService delivery;
+    @Inject private NativeQueries locks;
 
     @Transactional public ManifestoDto create(CreateManifestoRequest request, long actor) {
         UserAccount account = activeAccount(actor);
@@ -58,7 +60,8 @@ public class ManifestoService {
         return entity;
     }
     @Transactional public ManifestoVersionDto createVersion(long manifestoId, CreateManifestoVersionRequest request, long actor) {
-        requireOwner(manifestoId, actor);
+        Manifesto manifesto = locks.lock(Manifesto.class, manifestoId).orElseThrow(RecordNotFoundException::new);
+        if (!manifesto.getIssuerPersonId().equals(activeAccount(actor).getPersonId())) throw new RecordAccessDeniedException();
         ManifestoVersion entity = mapper.toEntity(request);
         entity.setManifestoId(manifestoId); entity.setVersionNumber(next(versions.latestNumber(manifestoId))); entity.setRecordedByAccountId(actor);
         return mapper.toDto(versions.insert(entity));
@@ -74,7 +77,7 @@ public class ManifestoService {
         return createRevision(commitments.insert(entity).getId(), request, actor);
     }
     @Transactional public CommitmentRevisionDto createRevision(long commitmentId, CreateCommitmentRevisionRequest request, long actor) {
-        Commitment commitment = commitments.findById(commitmentId).orElseThrow(RecordNotFoundException::new);
+        Commitment commitment = locks.lock(Commitment.class, commitmentId).orElseThrow(RecordNotFoundException::new);
         requireOwner(commitment.getManifestoId(), actor);
         CommitmentRevision entity = mapper.toEntity(request);
         entity.setCommitmentId(commitmentId); entity.setRevisionNumber(next(revisions.latestNumber(commitmentId))); entity.setRecordedByAccountId(actor);
